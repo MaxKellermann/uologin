@@ -1,0 +1,145 @@
+project('uosagas-login-server', 'cpp', version: '0.1',
+  meson_version: '>= 1.0',
+  default_options: [
+    'cpp_std=c++2a',
+    'warning_level=3',
+
+    'fmt:cpp_std=c++2a',
+  ],
+)
+
+debug = get_option('b_ndebug') != 'true'
+
+compiler = meson.get_compiler('cpp')
+
+conf = configuration_data()
+
+common_flags = [
+  '-D_GNU_SOURCE',
+]
+
+test_common_flags = [
+  '-Wcast-align',
+  '-Wcast-qual',
+  '-Wdouble-promotion',
+  '-Wfloat-equal',
+  '-Wmissing-declarations',
+  '-Wmissing-noreturn',
+  '-Wmissing-format-attribute',
+  '-Wredundant-decls',
+  '-Wshadow',
+  '-Wundef',
+  '-Wunused',
+  '-Wvla',
+  '-Wwrite-strings',
+
+  '-Wno-missing-field-initializers',
+
+  # clang specific warning options:
+  '-Wunreachable-code-aggressive',
+  '-Wused-but-marked-unused',
+]
+
+test_global_common_flags = [
+  '-fvisibility=hidden',
+]
+
+add_global_link_arguments(
+  compiler.get_supported_link_arguments(
+    # make relocations read-only (hardening)
+    '-Wl,-z,relro',
+
+    # no lazy binding, please - not worth it for a daemon
+    '-Wl,-z,now',
+  ),
+  language: 'cpp'
+)
+
+if not debug
+  test_global_common_flags += [
+    '-ffunction-sections',
+    '-fdata-sections',
+  ]
+
+  add_global_link_arguments(
+    compiler.get_supported_link_arguments(
+      '-Wl,--gc-sections',
+      '-Wl,--icf=all',
+    ),
+    language: 'cpp'
+  )
+endif
+
+test_global_cxxflags = test_global_common_flags + [
+]
+
+test_cxxflags = test_common_flags + [
+  '-fno-threadsafe-statics',
+  '-fmerge-all-constants',
+
+  '-Wcomma-subscript',
+  '-Wextra-semi',
+  '-Wmismatched-tags',
+  '-Woverloaded-virtual',
+  '-Wsign-promo',
+  '-Wvolatile',
+  '-Wvirtual-inheritance',
+
+  # a vtable without a dtor is just fine
+  '-Wno-non-virtual-dtor',
+
+  # clang specific warning options:
+  '-Wcomma',
+  '-Wheader-hygiene',
+  '-Winconsistent-missing-destructor-override',
+]
+
+add_global_arguments(common_flags, language: 'cpp')
+add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), language: 'cpp')
+add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
+
+libsystemd = dependency('libsystemd', required: get_option('systemd'))
+
+inc = include_directories(
+  '.',
+  'src',
+  'libcommon/src',
+)
+
+libcommon_enable_DefaultFifoBuffer = false
+
+subdir('libcommon/src/util')
+subdir('libcommon/src/lib/fmt')
+subdir('libcommon/src/io')
+subdir('libcommon/src/system')
+subdir('libcommon/src/net')
+subdir('libcommon/src/event')
+subdir('libcommon/src/event/net')
+subdir('libcommon/src/stock')
+
+if libsystemd.found()
+  subdir('libcommon/src/event/systemd')
+  libsystemd = event_systemd_dep
+endif
+
+conf.set('HAVE_LIBSYSTEMD', libsystemd.found())
+configure_file(output: 'config.h', configuration: conf)
+
+executable(
+  'uosagas-login-server',
+  'src/Main.cxx',
+  'src/CommandLine.cxx',
+  'src/Instance.cxx',
+  'src/Connection.cxx',
+  'src/PipeStock.cxx',
+  'src/Splice.cxx',
+  include_directories: inc,
+  dependencies: [
+    libsystemd,
+    util_dep,
+    net_dep,
+    event_net_dep,
+    stock_dep,
+  ],
+  install: true,
+)
