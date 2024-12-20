@@ -113,7 +113,14 @@ Connection::OnIncomingReady(unsigned events) noexcept
 		}
 
 		const auto username = UO::ExtractString(packets.login.credentials.username);
+		const auto password = UO::ExtractString(packets.login.credentials.password);
 		if (!IsValidUsername(username)) {
+			// TODO
+			Destroy();
+			return;
+		}
+
+		if (!instance.GetDatabase().CheckCredentials(username, password)) {
 			// TODO
 			Destroy();
 			return;

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Database.hxx"
 #include "PipeStock.hxx"
 #include "Listener.hxx"
 #include "event/Loop.hxx"
@@ -27,6 +28,8 @@ class Instance {
 
 	PipeStock pipe_stock{event_loop};
 
+	Database database;
+
 	std::forward_list<Listener> listeners;
 
 	const SocketAddress server_address;
@@ -44,6 +47,10 @@ public:
 
 	const SocketAddress GetServerAddress() const noexcept {
 		return server_address;
+	}
+
+	const Database &GetDatabase() const noexcept {
+		return database;
 	}
 
 	void AddListener(UniqueSocketDescriptor &&fd) noexcept {

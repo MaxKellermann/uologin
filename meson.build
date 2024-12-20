@@ -129,6 +129,7 @@ executable(
   'uosagas-login-server',
   'src/Main.cxx',
   'src/CommandLine.cxx',
+  'src/Database.cxx',
   'src/Instance.cxx',
   'src/Connection.cxx',
   'src/PipeStock.cxx',
