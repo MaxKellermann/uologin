@@ -111,6 +111,7 @@ libcommon_enable_DefaultFifoBuffer = false
 subdir('libcommon/src/util')
 subdir('libcommon/src/lib/fmt')
 subdir('libcommon/src/io')
+subdir('libcommon/src/io/config')
 subdir('libcommon/src/system')
 subdir('libcommon/src/net')
 subdir('libcommon/src/event')
@@ -129,6 +130,7 @@ executable(
   'uosagas-login-server',
   'src/Main.cxx',
   'src/CommandLine.cxx',
+  'src/Config.cxx',
   'src/Database.cxx',
   'src/Instance.cxx',
   'src/Connection.cxx',
@@ -138,9 +140,12 @@ executable(
   dependencies: [
     libsystemd,
     util_dep,
+    io_config_dep,
     net_dep,
     event_net_dep,
     stock_dep,
   ],
   install: true,
 )
+
+install_data('login.conf', install_dir: get_option('sysconfdir') / 'uosagas')

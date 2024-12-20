@@ -7,8 +7,7 @@
 #include "net/SocketConfig.hxx"
 
 struct CommandLine {
-	SocketConfig listener;
-	AllocatedSocketAddress server;
+	const char *config_path = "/etc/uosagas/login.conf";
 };
 
 CommandLine

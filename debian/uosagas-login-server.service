@@ -4,7 +4,7 @@ Description=UOSagas Login Server
 [Service]
 Type=notify
 DynamicUser=yes
-ExecStart=/usr/bin/uosagas-login-server 2599 testcenter.uosagas.com:2593
+ExecStart=/usr/bin/uosagas-login-server
 
 WatchdogSec=2m
 

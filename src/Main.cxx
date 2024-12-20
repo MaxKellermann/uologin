@@ -2,6 +2,7 @@
 // author: Max Kellermann <max.kellermann@gmail.com>
 
 #include "CommandLine.hxx"
+#include "Config.hxx"
 #include "Instance.hxx"
 #include "lib/fmt/RuntimeError.hxx"
 #include "lib/fmt/SystemError.hxx"
@@ -17,11 +18,11 @@
 #include <sys/signal.h>
 
 static int
-Run(const CommandLine &cmdline)
+Run(const Config &config)
 {
-	Instance instance{cmdline.server};
+	Instance instance{config.game_server};
 
-	instance.AddListener(cmdline.listener.Create(SOCK_STREAM));
+	instance.AddListener(config.listener.Create(SOCK_STREAM));
 
 #ifdef HAVE_LIBSYSTEMD
 	/* tell systemd we're ready */
@@ -36,13 +37,14 @@ int
 main(int argc, char **argv) noexcept
 try {
 	const auto cmdline = ParseCommandLine(argc, argv);
+	const auto config = LoadConfigFile(cmdline.config_path);
 
 	signal(SIGPIPE, SIG_IGN);
 
 	/* reduce glibc's thread cancellation overhead */
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
 
-	return Run(cmdline);
+	return Run(config);
 } catch (...) {
 	PrintException(std::current_exception());
 	return EXIT_FAILURE;
