@@ -28,4 +28,6 @@ Instance::OnShutdown() noexcept
 #endif
 
 	listeners.clear();
+
+	client_accounting.Shutdown();
 }

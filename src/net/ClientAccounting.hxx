@@ -94,6 +94,10 @@ public:
 		return cleanup_timer.GetEventLoop();
 	}
 
+	void Shutdown() noexcept {
+		cleanup_timer.Cancel();
+	}
+
 	std::size_t GetMaxConnections() const noexcept {
 		return max_connections;
 	}
