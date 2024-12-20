@@ -7,6 +7,7 @@
 #include "event/CoarseTimerEvent.hxx"
 #include "event/SocketEvent.hxx"
 #include "event/net/ConnectSocket.hxx"
+#include "net/AccountedClientConnection.hxx"
 #include "util/IntrusiveList.hxx"
 
 #include <array>
@@ -20,6 +21,8 @@ class Connection final
 	  ConnectSocketHandler
 {
 	Instance &instance;
+
+	AccountedClientConnection accounting;
 
 	SocketEvent incoming, outgoing;
 
@@ -40,6 +43,7 @@ class Connection final
 
 public:
 	Connection(Instance &_instance,
+		   PerClientAccounting *per_client,
 		   UniqueSocketDescriptor &&_fd, SocketAddress address) noexcept;
 	~Connection() noexcept;
 

@@ -135,8 +135,11 @@ executable(
   'src/Instance.cxx',
   'src/Listener.cxx',
   'src/Connection.cxx',
+  'src/DelayedConnection.cxx',
   'src/PipeStock.cxx',
   'src/Splice.cxx',
+  'src/net/AccountedClientConnection.cxx',
+  'src/net/ClientAccounting.cxx',
   include_directories: inc,
   dependencies: [
     libsystemd,

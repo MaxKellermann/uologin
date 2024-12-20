@@ -8,6 +8,7 @@
 #include "Listener.hxx"
 #include "event/Loop.hxx"
 #include "event/ShutdownListener.hxx"
+#include "net/ClientAccounting.hxx"
 #include "net/SocketAddress.hxx"
 #include "config.h"
 
@@ -28,6 +29,8 @@ class Instance {
 	PipeStock pipe_stock{event_loop};
 
 	Database database;
+
+	ClientAccountingMap client_accounting{event_loop, 16, true};
 
 	std::forward_list<Listener> listeners;
 
@@ -50,6 +53,11 @@ public:
 
 	const Database &GetDatabase() const noexcept {
 		return database;
+	}
+
+	[[gnu::pure]]
+	PerClientAccounting *GetClientAccounting(SocketAddress address) noexcept {
+		return client_accounting.Get(address);
 	}
 
 	void AddListener(UniqueSocketDescriptor &&fd) noexcept {

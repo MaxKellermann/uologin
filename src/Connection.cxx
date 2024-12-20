@@ -14,6 +14,7 @@
 #include <string_view>
 
 Connection::Connection(Instance &_instance,
+		       PerClientAccounting *per_client,
 		       UniqueSocketDescriptor &&_fd,
 		       [[maybe_unused]] SocketAddress address) noexcept
 	:instance(_instance),
@@ -27,6 +28,9 @@ Connection::Connection(Instance &_instance,
 
 	/* wait for up to 5 seconds for login packets */
 	timeout.Schedule(std::chrono::seconds{5});
+
+	if (per_client != nullptr)
+		per_client->AddConnection(accounting);
 }
 
 Connection::~Connection() noexcept
@@ -66,6 +70,9 @@ void
 Connection::OnIncomingReady(unsigned events) noexcept
 {
 	if (events & (incoming.ERROR | incoming.HANGUP)) {
+		if (!outgoing.IsDefined())
+			accounting.UpdateTokenBucket(4);
+
 		Destroy();
 		return;
 	}
@@ -98,7 +105,7 @@ Connection::OnIncomingReady(unsigned events) noexcept
 
 		if (packets.seed.cmd != UO::Command::Seed ||
 		    packets.login.cmd != UO::Command::AccountLogin) {
-			// TODO
+			accounting.UpdateTokenBucket(10);
 			Destroy();
 			return;
 		}
@@ -106,17 +113,18 @@ Connection::OnIncomingReady(unsigned events) noexcept
 		const auto username = UO::ExtractString(packets.login.credentials.username);
 		const auto password = UO::ExtractString(packets.login.credentials.password);
 		if (!IsValidUsername(username)) {
-			// TODO
+			accounting.UpdateTokenBucket(8);
 			Destroy();
 			return;
 		}
 
 		if (!instance.GetDatabase().CheckCredentials(username, password)) {
-			// TODO
+			accounting.UpdateTokenBucket(5);
 			Destroy();
 			return;
 		}
 
+		accounting.UpdateTokenBucket(1);
 		fmt::print(stderr, "username={:?}\n", username);
 
 		// TODO verify credentials
@@ -170,6 +178,7 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 	assert(!connect.IsPending());
 
 	if (events & (outgoing.ERROR | outgoing.HANGUP)) {
+		accounting.UpdateTokenBucket(5);
 		Destroy();
 		return;
 	}
@@ -214,6 +223,7 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 void
 Connection::OnTimeout() noexcept
 {
+	accounting.UpdateTokenBucket(7);
 	Destroy();
 }
 

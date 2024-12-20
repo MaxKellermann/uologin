@@ -8,16 +8,23 @@
 
 class Instance;
 class Connection;
+class DelayedConnection;
+class PerClientAccounting;
 
 class Listener final : ServerSocket {
 	Instance &instance;
 
 	IntrusiveList<Connection> connections;
+	IntrusiveList<DelayedConnection> delayed_connections;
 
 public:
 	[[nodiscard]]
 	Listener(Instance &_instance, UniqueSocketDescriptor &&socket);
 	~Listener() noexcept;
+
+	void AddConnection(PerClientAccounting *per_client,
+			   UniqueSocketDescriptor &&connection_fd,
+			   SocketAddress peer_address) noexcept;
 
 private:
 	/* virtual methods from class ServerSocket */
