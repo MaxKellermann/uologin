@@ -3,11 +3,10 @@
 
 #include "Connection.hxx"
 #include "Instance.hxx"
+#include "Validate.hxx"
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
-#include "util/CharUtil.hxx"
-#include "util/StringVerify.hxx"
 
 #include <fmt/core.h>
 
@@ -40,14 +39,6 @@ struct ExpectedPackets {
 	struct uo_packet_seed seed;
 	struct uo_packet_account_login login;
 };
-
-static bool
-IsValidUsername(std::string_view s) noexcept
-{
-	return CheckCharsNonEmpty(s, [](char ch){
-		return IsPrintableASCII(ch);
-	});
-}
 
 static bool
 DoSpliceSend(SocketEvent &from, SocketEvent &to, Splice &s)
