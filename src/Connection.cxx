@@ -7,6 +7,7 @@
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
+#include "net/UniqueSocketDescriptor.hxx"
 
 #include <fmt/core.h>
 

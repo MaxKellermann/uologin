@@ -6,6 +6,7 @@
 #include "Instance.hxx"
 #include "lib/fmt/RuntimeError.hxx"
 #include "lib/fmt/SystemError.hxx"
+#include "net/UniqueSocketDescriptor.hxx"
 #include "util/PrintException.hxx"
 #include "config.h"
 

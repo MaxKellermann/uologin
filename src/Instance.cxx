@@ -2,14 +2,20 @@
 // author: Max Kellermann <max.kellermann@gmail.com>
 
 #include "Instance.hxx"
-#include "system/Error.hxx"
-
-#include <stdexcept>
+#include "Listener.hxx"
 
 Instance::Instance(SocketAddress _server_address)
 	:server_address(_server_address)
 {
 	shutdown_listener.Enable();
+}
+
+Instance::~Instance() noexcept = default;
+
+void
+Instance::AddListener(UniqueSocketDescriptor &&fd) noexcept
+{
+	listeners.emplace_front(*this, std::move(fd));
 }
 
 void

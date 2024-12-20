@@ -5,7 +5,6 @@
 
 #include "Database.hxx"
 #include "PipeStock.hxx"
-#include "Listener.hxx"
 #include "event/Loop.hxx"
 #include "event/ShutdownListener.hxx"
 #include "net/ClientAccounting.hxx"
@@ -17,6 +16,8 @@
 #endif // HAVE_LIBSYSTEMD
 
 #include <forward_list>
+
+class Listener;
 
 class Instance {
 	EventLoop event_loop;
@@ -37,7 +38,9 @@ class Instance {
 	const SocketAddress server_address;
 
 public:
+	[[nodiscard]]
 	explicit Instance(SocketAddress _server_address);
+	~Instance() noexcept;
 
 	EventLoop &GetEventLoop() noexcept {
 		return event_loop;
@@ -60,9 +63,7 @@ public:
 		return client_accounting.Get(address);
 	}
 
-	void AddListener(UniqueSocketDescriptor &&fd) noexcept {
-		listeners.emplace_front(*this, std::move(fd));
-	}
+	void AddListener(UniqueSocketDescriptor &&fd) noexcept;
 
 private:
 	void OnShutdown() noexcept;
