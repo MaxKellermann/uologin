@@ -49,6 +49,8 @@ class PerClientAccounting final
 
 	TokenBucket token_bucket;
 
+	bool knocked = false;
+
 public:
 	PerClientAccounting(ClientAccountingMap &_map, uint_least64_t _address) noexcept;
 
@@ -62,6 +64,10 @@ public:
 
 	Event::Duration GetDelay() const noexcept {
 		return delay;
+	}
+
+	bool HasKnocked() const noexcept {
+		return knocked;
 	}
 
 private:

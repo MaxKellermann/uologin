@@ -13,6 +13,8 @@ struct Config {
 		.tcp_no_delay = true,
 	};
 
+	SocketConfig knock_listener;
+
 	AllocatedSocketAddress game_server;
 };
 

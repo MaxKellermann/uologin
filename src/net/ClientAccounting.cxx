@@ -106,6 +106,10 @@ PerClientAccounting::UpdateTokenBucket(double size) noexcept
 
 		if (delay < MAX_DELAY)
 			delay += DELAY_STEP;
+
+		/* reset the "knocked" flag for clients that are over
+                   the limit */
+		knocked = false;
 	} else if (now < tarpit_until) {
 		if (delay > DELAY_STEP)
 			delay -= DELAY_STEP;

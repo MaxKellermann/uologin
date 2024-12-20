@@ -31,6 +31,11 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		line.ExpectEnd();
 
 		config.listener.bind_address = IPv4Address{port};
+	} else if (StringIsEqual(word, "knock_port")) {
+		const uint16_t port = line.NextPositiveInteger();
+		line.ExpectEnd();
+
+		config.knock_listener.bind_address = IPv4Address{port};
 	} else if (StringIsEqual(word, "game_server")) {
 		const char *value = line.ExpectValueAndEnd();
 
@@ -52,6 +57,7 @@ MyConfigParser::Finish()
 		config.listener.bind_address = IPv4Address{2593};
 
 	config.listener.Fixup();
+	config.knock_listener.Fixup();
 
 	if (config.game_server.IsNull())
 		throw "No game_server setting";

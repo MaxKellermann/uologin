@@ -39,6 +39,12 @@ Listener::OnAccept(UniqueSocketDescriptor connection_fd,
 	if (per_client != nullptr) {
 		per_client->UpdateTokenBucket(1);
 
+		if (instance.RequireKnock() && !per_client->HasKnocked()) {
+			// TODO remove this log message (no spam)
+			fmt::print(stderr, "Client {} has not knocked\n", peer_address);
+			return;
+		}
+
 		if (!per_client->Check()) {
 			/* too many connections from this IP address -
 			   reject the new connection */

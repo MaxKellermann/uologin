@@ -134,6 +134,7 @@ executable(
   'src/Database.cxx',
   'src/Instance.cxx',
   'src/Listener.cxx',
+  'src/KnockListener.cxx',
   'src/Connection.cxx',
   'src/DelayedConnection.cxx',
   'src/PipeStock.cxx',

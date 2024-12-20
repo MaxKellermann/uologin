@@ -25,6 +25,9 @@ Run(const Config &config)
 
 	instance.AddListener(config.listener.Create(SOCK_STREAM));
 
+	if (!config.knock_listener.bind_address.IsNull())
+		instance.AddKnockListener(config.knock_listener.Create(SOCK_DGRAM));
+
 #ifdef HAVE_LIBSYSTEMD
 	/* tell systemd we're ready */
 	sd_notify(0, "READY=1");

@@ -18,6 +18,7 @@
 #include <forward_list>
 
 class Listener;
+class KnockListener;
 
 class Instance {
 	EventLoop event_loop;
@@ -34,6 +35,7 @@ class Instance {
 	ClientAccountingMap client_accounting{event_loop, 16, true};
 
 	std::forward_list<Listener> listeners;
+	std::forward_list<KnockListener> knock_listeners;
 
 	const SocketAddress server_address;
 
@@ -54,6 +56,10 @@ public:
 		return server_address;
 	}
 
+	bool RequireKnock() const noexcept {
+		return !knock_listeners.empty();
+	}
+
 	const Database &GetDatabase() const noexcept {
 		return database;
 	}
@@ -64,6 +70,7 @@ public:
 	}
 
 	void AddListener(UniqueSocketDescriptor &&fd) noexcept;
+	void AddKnockListener(UniqueSocketDescriptor &&fd) noexcept;
 
 private:
 	void OnShutdown() noexcept;

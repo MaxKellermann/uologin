@@ -3,6 +3,7 @@
 
 #include "Instance.hxx"
 #include "Listener.hxx"
+#include "KnockListener.hxx"
 
 Instance::Instance(SocketAddress _server_address)
 	:server_address(_server_address)
@@ -19,6 +20,12 @@ Instance::AddListener(UniqueSocketDescriptor &&fd) noexcept
 }
 
 void
+Instance::AddKnockListener(UniqueSocketDescriptor &&fd) noexcept
+{
+	knock_listeners.emplace_front(*this, std::move(fd));
+}
+
+void
 Instance::OnShutdown() noexcept
 {
 	shutdown_listener.Disable();
@@ -27,6 +34,7 @@ Instance::OnShutdown() noexcept
 	systemd_watchdog.Disable();
 #endif
 
+	knock_listeners.clear();
 	listeners.clear();
 
 	client_accounting.Shutdown();
