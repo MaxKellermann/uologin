@@ -15,7 +15,7 @@
 
 Connection::Connection(Instance &_instance,
 		       UniqueSocketDescriptor &&_fd,
-		       [[maybe_unused]] SocketAddress address)
+		       [[maybe_unused]] SocketAddress address) noexcept
 	:instance(_instance),
 	 incoming(instance.GetEventLoop(), BIND_THIS_METHOD(OnIncomingReady),
 		  _fd.Release()),

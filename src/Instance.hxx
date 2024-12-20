@@ -53,8 +53,7 @@ public:
 	}
 
 	void AddListener(UniqueSocketDescriptor &&fd) noexcept {
-		listeners.emplace_front(event_loop, *this);
-		listeners.front().Listen(std::move(fd));
+		listeners.emplace_front(*this, std::move(fd));
 	}
 
 private:

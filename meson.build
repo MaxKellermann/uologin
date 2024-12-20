@@ -133,6 +133,7 @@ executable(
   'src/Config.cxx',
   'src/Database.cxx',
   'src/Instance.cxx',
+  'src/Listener.cxx',
   'src/Connection.cxx',
   'src/PipeStock.cxx',
   'src/Splice.cxx',

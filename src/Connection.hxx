@@ -40,7 +40,7 @@ class Connection final
 
 public:
 	Connection(Instance &_instance,
-		   UniqueSocketDescriptor &&_fd, SocketAddress address);
+		   UniqueSocketDescriptor &&_fd, SocketAddress address) noexcept;
 	~Connection() noexcept;
 
 	auto &GetEventLoop() const noexcept {
