@@ -68,7 +68,8 @@ LoadConfigFile(const char *path)
 {
 	Config config;
 	MyConfigParser parser{config};
-	ParseConfigFile(path, parser);
+	CommentConfigParser parser2{parser};
+	ParseConfigFile(path, parser2);
 	return config;
 }
 
