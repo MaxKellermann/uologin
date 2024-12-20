@@ -14,9 +14,6 @@ struct Config {
 	};
 
 	AllocatedSocketAddress game_server;
-
-	Config() noexcept {
-	}
 };
 
 Config
