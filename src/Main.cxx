@@ -21,10 +21,7 @@ Run(const CommandLine &cmdline)
 {
 	Instance instance{cmdline.server};
 
-#ifdef HAVE_LIBSYSTEMD
-	if (!instance.AddSystemdListener())
-#endif
-		instance.AddListener(cmdline.listener.Create(SOCK_STREAM));
+	instance.AddListener(cmdline.listener.Create(SOCK_STREAM));
 
 #ifdef HAVE_LIBSYSTEMD
 	/* tell systemd we're ready */

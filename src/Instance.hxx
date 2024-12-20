@@ -58,14 +58,6 @@ public:
 		listeners.front().Listen(std::move(fd));
 	}
 
-#ifdef HAVE_LIBSYSTEMD
-	/**
-	 * Listen for incoming connections on sockets passed by systemd
-	 * (systemd socket activation).
-	 */
-	bool AddSystemdListener();
-#endif // HAVE_LIBSYSTEMD
-
 private:
 	void OnShutdown() noexcept;
 };
