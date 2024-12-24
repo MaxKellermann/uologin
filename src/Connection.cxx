@@ -156,6 +156,9 @@ Connection::OnIncomingReady(unsigned events) noexcept
 			break;
 
 		case Splice::ReceiveResult::SOCKET_CLOSED:
+			/* close connection with FIN, not RST */
+			outgoing.GetSocket().ShutdownWrite();
+
 			Destroy();
 			return;
 
@@ -205,6 +208,9 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 			break;
 
 		case Splice::ReceiveResult::SOCKET_CLOSED:
+			/* close connection with FIN, not RST */
+			incoming.GetSocket().ShutdownWrite();
+
 			Destroy();
 			return;
 
