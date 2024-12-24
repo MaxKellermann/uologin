@@ -41,6 +41,15 @@ struct uo_packet_game_login {
 static_assert(alignof(struct uo_packet_game_login) == 1);
 static_assert(sizeof(struct uo_packet_game_login) == 65);
 
+/* 0xbf Extended */
+struct uo_packet_extended {
+	UO::Command cmd;
+	PackedBE16 length;
+	PackedBE16 extended_cmd;
+};
+
+static_assert(alignof(struct uo_packet_extended) == 1);
+
 /* 0xef Seed */
 struct uo_packet_seed {
 	UO::Command cmd;

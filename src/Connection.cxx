@@ -7,7 +7,10 @@
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
+#include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
+#include "io/Iovec.hxx"
+#include "util/SpanCast.hxx"
 
 #include <fmt/core.h>
 
@@ -17,8 +20,9 @@
 Connection::Connection(Instance &_instance,
 		       PerClientAccounting *per_client,
 		       UniqueSocketDescriptor &&_fd,
-		       [[maybe_unused]] SocketAddress address) noexcept
+		       SocketAddress address) noexcept
 	:instance(_instance),
+	 remote_address(address),
 	 incoming(instance.GetEventLoop(), BIND_THIS_METHOD(OnIncomingReady),
 		  _fd.Release()),
 	 outgoing(instance.GetEventLoop(), BIND_THIS_METHOD(OnOutgoingReady)),
@@ -239,7 +243,33 @@ Connection::SendInitialPackets(SocketDescriptor socket) noexcept
 {
 	assert(initial_packets_fill == initial_packets.size());
 
-	return socket.WriteNoWait(initial_packets) >= 0;
+	const auto &packets = *reinterpret_cast<const ExpectedPackets *>(initial_packets.data());
+	static_assert(sizeof(initial_packets) == sizeof(packets));
+
+	std::array<struct iovec, 5> v;
+	std::size_t n = 0;
+
+	v[n++] = MakeIovec(ReferenceAsBytes(packets.seed));
+
+	struct uo_packet_extended remote_ip_header;
+	std::string remote_ip_buffer;
+	if (instance.ShouldSendRemoteIP()) {
+		if (const auto remote_ip = HostToString(remote_address); !remote_ip.empty()) {
+			remote_ip_buffer = fmt::format("REMOTE_IP={}", remote_ip);
+			remote_ip_header = {
+				.cmd = UO::Command::Extended,
+				.length = remote_ip_buffer.length(),
+				.extended_cmd = 0x5a6a,
+			};
+
+			v[n++] = MakeIovec(ReferenceAsBytes(remote_ip_header));
+			v[n++] = MakeIovec(AsBytes(remote_ip_buffer));
+		}
+	}
+
+	v[n++] = MakeIovec(ReferenceAsBytes(packets.login));
+
+	return socket.Send(std::span{v}.first(n), MSG_DONTWAIT) > 0;
 }
 
 void

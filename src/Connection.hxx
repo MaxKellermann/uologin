@@ -8,6 +8,7 @@
 #include "event/SocketEvent.hxx"
 #include "event/net/ConnectSocket.hxx"
 #include "net/AccountedClientConnection.hxx"
+#include "net/StaticSocketAddress.hxx"
 #include "util/IntrusiveList.hxx"
 
 #include <array>
@@ -21,6 +22,8 @@ class Connection final
 	  ConnectSocketHandler
 {
 	Instance &instance;
+
+	const StaticSocketAddress remote_address;
 
 	AccountedClientConnection accounting;
 

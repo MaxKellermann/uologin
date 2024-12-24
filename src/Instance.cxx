@@ -5,8 +5,9 @@
 #include "Listener.hxx"
 #include "KnockListener.hxx"
 
-Instance::Instance(SocketAddress _server_address)
-	:server_address(_server_address)
+Instance::Instance(SocketAddress _server_address, bool _send_remote_ip)
+	:server_address(_server_address),
+	send_remote_ip(_send_remote_ip)
 {
 	shutdown_listener.Enable();
 }

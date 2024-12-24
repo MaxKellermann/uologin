@@ -46,6 +46,9 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		};
 
 		config.game_server = Resolve(value, 2593, &hints).GetBest();
+	} else if (StringIsEqual(word, "send_remote_ip")) {
+		config.send_remote_ip = line.NextBool();
+		line.ExpectEnd();
 	} else
 		throw LineParser::Error{"Unknown option"};
 }

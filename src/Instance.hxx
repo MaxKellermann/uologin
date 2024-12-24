@@ -39,9 +39,11 @@ class Instance {
 
 	const SocketAddress server_address;
 
+	const bool send_remote_ip;
+
 public:
 	[[nodiscard]]
-	explicit Instance(SocketAddress _server_address);
+	Instance(SocketAddress _server_address, bool _send_remote_ip);
 	~Instance() noexcept;
 
 	EventLoop &GetEventLoop() noexcept {
@@ -54,6 +56,10 @@ public:
 
 	const SocketAddress GetServerAddress() const noexcept {
 		return server_address;
+	}
+
+	bool ShouldSendRemoteIP() const noexcept {
+		return send_remote_ip;
 	}
 
 	bool RequireKnock() const noexcept {

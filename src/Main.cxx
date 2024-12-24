@@ -21,7 +21,7 @@
 static int
 Run(const Config &config)
 {
-	Instance instance{config.game_server};
+	Instance instance{config.game_server, config.send_remote_ip};
 
 	instance.AddListener(config.listener.Create(SOCK_STREAM));
 

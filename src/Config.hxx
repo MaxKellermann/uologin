@@ -16,6 +16,8 @@ struct Config {
 	SocketConfig knock_listener;
 
 	AllocatedSocketAddress game_server;
+
+	bool send_remote_ip = false;
 };
 
 Config
