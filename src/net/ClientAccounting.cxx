@@ -117,6 +117,11 @@ PerClientAccounting::UpdateTokenBucket(double size) noexcept
 		delay = {};
 }
 
+ClientAccountingMap::~ClientAccountingMap() noexcept
+{
+	map.clear_and_dispose(DeleteDisposer{});
+}
+
 PerClientAccounting *
 ClientAccountingMap::Get(SocketAddress _address) noexcept
 {

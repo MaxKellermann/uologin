@@ -95,6 +95,7 @@ public:
 		:max_connections(_max_connections),
 		 tarpit(_tarpit),
 		 cleanup_timer(event_loop, BIND_THIS_METHOD(OnCleanupTimer)) {}
+	~ClientAccountingMap() noexcept;
 
 	auto &GetEventLoop() const noexcept {
 		return cleanup_timer.GetEventLoop();
