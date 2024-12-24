@@ -234,16 +234,18 @@ Connection::OnTimeout() noexcept
 	Destroy();
 }
 
-void
-Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
+inline bool
+Connection::SendInitialPackets(SocketDescriptor socket) noexcept
 {
 	assert(initial_packets_fill == initial_packets.size());
 
-	if (const auto nbytes = fd.WriteNoWait(initial_packets); nbytes < 0) {
-		// TODO log error?
-		Destroy();
-		return;
-	} else if (static_cast<std::size_t>(nbytes) < initial_packets.size()) {
+	return socket.WriteNoWait(initial_packets) >= 0;
+}
+
+void
+Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
+{
+	if (!SendInitialPackets(fd)) {
 		// TODO log error?
 		Destroy();
 		return;

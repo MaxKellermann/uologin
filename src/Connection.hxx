@@ -60,6 +60,8 @@ private:
 	void OnOutgoingReady(unsigned events) noexcept;
 	void OnTimeout() noexcept;
 
+	bool SendInitialPackets(SocketDescriptor socket) noexcept;
+
 	/* virtual methods from ConnectSocketHandler */
 	void OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept override;
 	void OnSocketConnectError(std::exception_ptr e) noexcept override;
