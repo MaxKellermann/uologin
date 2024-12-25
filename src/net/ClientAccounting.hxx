@@ -66,6 +66,10 @@ public:
 		return delay;
 	}
 
+	void SetKnocked() noexcept {
+		knocked = true;
+	}
+
 	bool HasKnocked() const noexcept {
 		return knocked;
 	}

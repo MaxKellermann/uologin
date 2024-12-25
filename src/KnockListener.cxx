@@ -25,6 +25,8 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 			     SocketAddress address, int)
 {
 	auto *accounting = instance.GetClientAccounting(address);
+	if (accounting == nullptr)
+		return true;
 
 	const auto &packet = *reinterpret_cast<const struct uo_packet_account_login *>(payload.data());
 	if (payload.size() != sizeof(packet) ||
@@ -48,6 +50,7 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 		return true;
 	}
 
+	accounting->SetKnocked();
 	return true;
 }
 
