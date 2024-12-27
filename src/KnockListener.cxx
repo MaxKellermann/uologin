@@ -4,18 +4,23 @@
 #include "KnockListener.hxx"
 #include "Instance.hxx"
 #include "Validate.hxx"
+#include "Nftables.hxx"
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
+#include "lib/fmt/ExceptionFormatter.hxx"
 #include "net/MultiReceiveMessage.hxx"
+#include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
 #include "util/PrintException.hxx"
 
-KnockListener::KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket)
+KnockListener::KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket,
+			     const char *_nft_set)
 	:instance(_instance),
 	 udp_listener(instance.GetEventLoop(), std::move(socket),
 		      MultiReceiveMessage{1024, sizeof(struct uo_packet_account_login)},
-		      *this)
+		      *this),
+	 nft_set(_nft_set)
 {
 }
 
@@ -51,6 +56,17 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 	}
 
 	accounting->SetKnocked();
+
+	if (nft_set != nullptr) {
+		if (const auto ip = HostToString(address); !ip.empty()) {
+			try {
+				NftAddElement("inet", "filter", nft_set, ip.c_str());
+			} catch (...) {
+				fmt::print(stderr, "Failed to add nft element: {}\n", std::current_exception());
+			}
+		}
+	}
+
 	return true;
 }
 

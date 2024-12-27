@@ -36,6 +36,8 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		line.ExpectEnd();
 
 		config.knock_listener.bind_address = IPv4Address{port};
+	} else if (StringIsEqual(word, "knock_nft_set")) {
+		config.knock_nft_set = line.ExpectValueAndEnd();
 	} else if (StringIsEqual(word, "game_server")) {
 		const char *value = line.ExpectValueAndEnd();
 

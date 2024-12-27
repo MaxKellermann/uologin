@@ -1,5 +1,6 @@
 [Unit]
 Description=UOSagas Login Server
+After=nftables.service
 
 [Service]
 Type=notify
@@ -31,6 +32,10 @@ ProtectKernelLogs=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 RestrictNamespaces=yes
 RestrictRealtime=yes
+
+# for nftables
+AmbientCapabilities=CAP_NET_ADMIN
+RestrictAddressFamilies=AF_NETLINK
 
 [Install]
 WantedBy=multi-user.target

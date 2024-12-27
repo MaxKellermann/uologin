@@ -139,6 +139,7 @@ executable(
   'src/DelayedConnection.cxx',
   'src/PipeStock.cxx',
   'src/Splice.cxx',
+  'src/Nftables.cxx',
   'src/net/AccountedClientConnection.cxx',
   'src/net/ClientAccounting.cxx',
   include_directories: inc,

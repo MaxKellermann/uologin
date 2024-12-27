@@ -5,6 +5,8 @@
 
 #include "net/SocketConfig.hxx"
 
+#include <string>
+
 struct Config {
 	SocketConfig listener{
 		.listen = 1024,
@@ -14,6 +16,8 @@ struct Config {
 	};
 
 	SocketConfig knock_listener;
+
+	std::string knock_nft_set;
 
 	AllocatedSocketAddress game_server;
 

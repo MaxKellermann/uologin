@@ -76,7 +76,8 @@ public:
 	}
 
 	void AddListener(UniqueSocketDescriptor &&fd) noexcept;
-	void AddKnockListener(UniqueSocketDescriptor &&fd) noexcept;
+	void AddKnockListener(UniqueSocketDescriptor &&fd,
+			      const char *nft_set) noexcept;
 
 private:
 	void OnShutdown() noexcept;

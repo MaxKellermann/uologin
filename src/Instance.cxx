@@ -21,9 +21,10 @@ Instance::AddListener(UniqueSocketDescriptor &&fd) noexcept
 }
 
 void
-Instance::AddKnockListener(UniqueSocketDescriptor &&fd) noexcept
+Instance::AddKnockListener(UniqueSocketDescriptor &&fd,
+			   const char *nft_set) noexcept
 {
-	knock_listeners.emplace_front(*this, std::move(fd));
+	knock_listeners.emplace_front(*this, std::move(fd), nft_set);
 }
 
 void

@@ -26,7 +26,8 @@ Run(const Config &config)
 	instance.AddListener(config.listener.Create(SOCK_STREAM));
 
 	if (!config.knock_listener.bind_address.IsNull())
-		instance.AddKnockListener(config.knock_listener.Create(SOCK_DGRAM));
+		instance.AddKnockListener(config.knock_listener.Create(SOCK_DGRAM),
+					  config.knock_nft_set.empty() ? nullptr : config.knock_nft_set.c_str());
 
 #ifdef HAVE_LIBSYSTEMD
 	/* tell systemd we're ready */

@@ -6,16 +6,19 @@
 #include "event/net/MultiUdpListener.hxx"
 #include "event/net/UdpHandler.hxx"
 
+struct Config;
 class Instance;
 class UniqueSocketDescriptor;
 
 class KnockListener final : UdpHandler {
 	Instance &instance;
 	MultiUdpListener udp_listener;
+	const char *const nft_set;
 
 public:
 	[[nodiscard]]
-	KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket);
+	KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket,
+		      const char *_nft_set);
 
 private:
 	// virtual methods from UdpHandler

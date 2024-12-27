@@ -13,5 +13,6 @@ Standards-Version: 4.0.0
 Package: uosagas-login-server
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}, systemd-sysv
+Recommends: nftables
 Description: UOSagas login server
  A login server and game proxy for the UOSagas shard.
