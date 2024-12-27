@@ -43,7 +43,8 @@ class Instance {
 
 public:
 	[[nodiscard]]
-	Instance(SocketAddress _server_address, bool _send_remote_ip);
+	Instance(const char *user_database,
+		 SocketAddress _server_address, bool _send_remote_ip);
 	~Instance() noexcept;
 
 	EventLoop &GetEventLoop() noexcept {

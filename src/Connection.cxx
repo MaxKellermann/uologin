@@ -10,6 +10,7 @@
 #include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
 #include "io/Iovec.hxx"
+#include "util/PrintException.hxx"
 #include "util/SpanCast.hxx"
 
 #include <fmt/core.h>
@@ -123,8 +124,15 @@ Connection::OnIncomingReady(unsigned events) noexcept
 			return;
 		}
 
-		if (!instance.GetDatabase().CheckCredentials(username, password)) {
-			accounting.UpdateTokenBucket(5);
+		try {
+			if (!instance.GetDatabase().CheckCredentials(username, password)) {
+				accounting.UpdateTokenBucket(5);
+				Destroy();
+				return;
+			}
+		} catch (...) {
+			PrintException(std::current_exception());
+			accounting.UpdateTokenBucket(2);
 			Destroy();
 			return;
 		}

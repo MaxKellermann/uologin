@@ -19,6 +19,8 @@ struct Config {
 
 	std::string knock_nft_set;
 
+	std::string user_database;
+
 	AllocatedSocketAddress game_server;
 
 	bool send_remote_ip = false;

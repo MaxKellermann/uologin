@@ -99,6 +99,8 @@ add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), lan
 add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
 
 libsystemd = dependency('libsystemd', required: get_option('systemd'))
+libsodium = dependency('libsodium', required: get_option('systemd'))
+berkeleydb = compiler.find_library('db')
 
 inc = include_directories(
   '.',
@@ -131,6 +133,7 @@ executable(
   'src/Main.cxx',
   'src/CommandLine.cxx',
   'src/Config.cxx',
+  'src/BerkeleyDB.cxx',
   'src/Database.cxx',
   'src/Instance.cxx',
   'src/Listener.cxx',
@@ -145,6 +148,8 @@ executable(
   include_directories: inc,
   dependencies: [
     libsystemd,
+    libsodium,
+    berkeleydb,
     util_dep,
     io_config_dep,
     net_dep,

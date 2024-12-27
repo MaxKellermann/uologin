@@ -6,7 +6,9 @@ Build-Depends: debhelper (>= 13.3~),
  meson (>= 1.0),
  g++ (>= 4:12),
  libc6-dev (>= 2.13),
+ libdb-dev,
  libfmt-dev (>= 9),
+ libsodium-dev,
  libsystemd-dev
 Standards-Version: 4.0.0
 
