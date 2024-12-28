@@ -99,7 +99,7 @@ add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), lan
 add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
 
 libsystemd = dependency('libsystemd', required: get_option('systemd'))
-libsodium = dependency('libsodium', required: get_option('systemd'))
+libsodium = dependency('libsodium')
 berkeleydb = compiler.find_library('db')
 
 inc = include_directories(
