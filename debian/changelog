@@ -2,7 +2,7 @@ uosagas-login-server (0.3) unstable; urgency=low
 
   * add Prometheus exporter
 
- --   
+ -- Max Kellermann <max.kellermann@gmail.com>  Sun, 29 Dec 2024 00:45:01 +0100
 
 uosagas-login-server (0.2) unstable; urgency=low
 
