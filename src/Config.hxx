@@ -22,6 +22,7 @@ struct Config {
 	SocketConfig prometheus_exporter{
 		.listen = 16,
 		.tcp_defer_accept = 10,
+		.mode = 0666,
 		.tcp_no_delay = true,
 	};
 
