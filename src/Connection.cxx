@@ -80,6 +80,7 @@ Connection::ReceiveLoginPackets() noexcept
 	/* read the initial packets (SEED and ACCOUNT_LOGIN) from the
 	   socket */
 
+	assert(state == State::INITIAL);
 	assert(initial_packets_fill < initial_packets.size());
 
 	const auto nbytes = incoming.GetSocket().ReadNoWait(std::span{initial_packets}.subspan(initial_packets_fill));
@@ -136,6 +137,7 @@ Connection::ReceiveLoginPackets() noexcept
 		   username, remote_address);
 
 	/* connect to the actual game server */
+	state = State::CONNECTING;
 	connect.Connect(instance.GetConfig().game_server, std::chrono::seconds{10});
 }
 
@@ -143,7 +145,7 @@ void
 Connection::OnIncomingReady(unsigned events) noexcept
 {
 	if (events & (incoming.ERROR | incoming.HANGUP)) {
-		if (!outgoing.IsDefined())
+		if (state == State::INITIAL)
 			accounting.UpdateTokenBucket(4);
 
 		Destroy();
@@ -152,7 +154,7 @@ Connection::OnIncomingReady(unsigned events) noexcept
 
 	assert(!connect.IsPending());
 
-	if (!outgoing.IsDefined()) {
+	if (state == State::INITIAL) {
 		/* read the initial packets (SEED and ACCOUNT_LOGIN)
 		   from the socket */
 		assert(events & incoming.READ);
@@ -203,6 +205,7 @@ Connection::OnIncomingReady(unsigned events) noexcept
 void
 Connection::OnOutgoingReady(unsigned events) noexcept
 {
+	assert(state == State::READY);
 	assert(incoming.IsDefined());
 	assert(!connect.IsPending());
 
@@ -296,6 +299,8 @@ Connection::SendInitialPackets(SocketDescriptor socket) noexcept
 void
 Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
 {
+	assert(state == State::CONNECTING);
+
 	if (!SendInitialPackets(fd)) {
 		// TODO log error?
 		Destroy();
@@ -305,11 +310,14 @@ Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
 	outgoing.Open(fd.Release());
 	outgoing.ScheduleRead();
 	incoming.ScheduleRead();
+	state = State::READY;
 }
 
 void
 Connection::OnSocketConnectError(std::exception_ptr e) noexcept
 {
+	assert(state == State::CONNECTING);
+
 	(void)e; // TODO
 	Destroy();
 }
