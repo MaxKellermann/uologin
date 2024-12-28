@@ -43,7 +43,7 @@ class Instance {
 
 public:
 	[[nodiscard]]
-	Instance(const char *user_database,
+	Instance(const char *user_database, bool auto_reload_user_database,
 		 SocketAddress _server_address, bool _send_remote_ip);
 	~Instance() noexcept;
 
@@ -67,7 +67,7 @@ public:
 		return !knock_listeners.empty();
 	}
 
-	const Database &GetDatabase() const noexcept {
+	Database &GetDatabase() noexcept {
 		return database;
 	}
 

@@ -23,6 +23,8 @@ struct Config {
 
 	AllocatedSocketAddress game_server;
 
+	bool auto_reload_user_database = false;
+
 	bool send_remote_ip = false;
 };
 

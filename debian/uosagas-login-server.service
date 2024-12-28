@@ -7,6 +7,8 @@ Type=notify
 DynamicUser=yes
 ExecStart=/usr/bin/uosagas-login-server
 
+RuntimeDirectory=uosagas/login-server
+
 WatchdogSec=2m
 
 # This allows the kernel to merge CPU wakeups, the default of 50ns is

@@ -1,6 +1,6 @@
 uosagas-login-server (0.2) unstable; urgency=low
 
-  * 
+  * add option "auto_reload_user_database"
 
  --   
 

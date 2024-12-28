@@ -5,9 +5,9 @@
 #include "Listener.hxx"
 #include "KnockListener.hxx"
 
-Instance::Instance(const char *user_database,
+Instance::Instance(const char *user_database, bool auto_reload_user_database,
 		   SocketAddress _server_address, bool _send_remote_ip)
-	:database(user_database),
+	:database(user_database, auto_reload_user_database),
 	 server_address(_server_address),
 	 send_remote_ip(_send_remote_ip)
 {

@@ -40,6 +40,9 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		config.knock_nft_set = line.ExpectValueAndEnd();
 	} else if (StringIsEqual(word, "user_database")) {
 		config.user_database = line.ExpectValueAndEnd();
+	} else if (StringIsEqual(word, "auto_reload_user_database")) {
+		config.auto_reload_user_database = line.NextBool();
+		line.ExpectEnd();
 	} else if (StringIsEqual(word, "game_server")) {
 		const char *value = line.ExpectValueAndEnd();
 
