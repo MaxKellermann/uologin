@@ -39,6 +39,7 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 	    packet.cmd != UO::Command::AccountLogin) {
 		if (accounting != nullptr)
 			accounting->UpdateTokenBucket(10);
+		++instance.metrics.malformed_knocks;
 		return true;
 	}
 
@@ -47,17 +48,20 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 	if (!IsValidUsername(username)) {
 		if (accounting != nullptr)
 			accounting->UpdateTokenBucket(8);
+		++instance.metrics.malformed_knocks;
 		return true;
 	}
 
 	if (!instance.GetDatabase().CheckCredentials(username, password)) {
 		if (accounting != nullptr)
 			accounting->UpdateTokenBucket(5);
+		++instance.metrics.rejected_knocks;
 		return true;
 	}
 
 	fmt::print(stderr, "Accepted knock for user {:?} from {}\n",
 		   username, address);
+	++instance.metrics.accepted_knocks;
 
 	accounting->SetKnocked();
 

@@ -42,6 +42,7 @@ Listener::OnAccept(UniqueSocketDescriptor connection_fd,
 		if (instance.RequireKnock() && !per_client->HasKnocked()) {
 			// TODO remove this log message (no spam)
 			fmt::print(stderr, "Client {} has not knocked\n", peer_address);
+			++instance.metrics.missing_knocks;
 			return;
 		}
 
@@ -56,6 +57,7 @@ Listener::OnAccept(UniqueSocketDescriptor connection_fd,
 
 		if (const auto delay = per_client->GetDelay(); delay.count() > 0) {
 			fmt::print(stderr, "Connect from {} tarpit {}s\n", peer_address, ToFloatSeconds(delay));
+			++instance.metrics.delayed_connections;
 			auto *c = new DelayedConnection(instance, *this,
 							*per_client, delay,
 							std::move(connection_fd), peer_address);

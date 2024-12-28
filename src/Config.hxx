@@ -19,6 +19,12 @@ struct GameServerConfig {
 };
 
 struct Config {
+	SocketConfig prometheus_exporter{
+		.listen = 16,
+		.tcp_defer_accept = 10,
+		.tcp_no_delay = true,
+	};
+
 	SocketConfig listener{
 		.listen = 1024,
 		.tcp_defer_accept = 10,
@@ -39,6 +45,8 @@ struct Config {
 	bool auto_reload_user_database = false;
 
 	bool send_remote_ip = false;
+
+	Config() noexcept;
 };
 
 Config

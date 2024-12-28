@@ -30,7 +30,8 @@ Splice::ReceiveFrom(PipeStock &stock, SocketDescriptor s)
 				   1ULL << 30,
 				   SPLICE_F_MOVE|SPLICE_F_NONBLOCK);
 	if (nbytes > 0) {
-		size += nbytes;
+		size += static_cast<std::size_t>(nbytes);
+		received_bytes += static_cast<std::size_t>(nbytes);
 		return ReceiveResult::OK;
 	} else if (nbytes == 0) {
 		if (size == 0) {
@@ -61,7 +62,8 @@ Splice::SendTo(SocketDescriptor s)
 				   size,
 				   SPLICE_F_MOVE|SPLICE_F_NONBLOCK);
 	if (nbytes > 0) {
-		size -= nbytes;
+		size -= static_cast<std::size_t>(nbytes);
+		sent_bytes += static_cast<std::size_t>(nbytes);
 
 		if (size == 0) {
 			pipe->Put(PutAction::REUSE);

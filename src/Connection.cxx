@@ -34,6 +34,9 @@ Connection::Connection(Instance &_instance,
 	 connect(instance.GetEventLoop(), *this),
 	 timeout(instance.GetEventLoop(), BIND_THIS_METHOD(OnTimeout))
 {
+	++instance.metrics.client_connections;
+	++instance.metrics.client_connections_accepted;
+
 	incoming.ScheduleRead();
 
 	/* wait for up to 5 seconds for login packets */
@@ -45,8 +48,13 @@ Connection::Connection(Instance &_instance,
 
 Connection::~Connection() noexcept
 {
-	outgoing.Close();
+	if (outgoing.IsDefined()) {
+		outgoing.Close();
+		--instance.metrics.server_connections;
+	}
+
 	incoming.Close();
+	--instance.metrics.client_connections;
 }
 
 struct ExpectedPackets {
@@ -172,6 +180,7 @@ Connection::ReceiveLoginPackets() noexcept
 
 	if (packets.seed.cmd != UO::Command::Seed ||
 	    packets.login.cmd != UO::Command::AccountLogin) {
+		++instance.metrics.malformed_logins;
 		accounting.UpdateTokenBucket(10);
 		Destroy();
 		return;
@@ -180,6 +189,7 @@ Connection::ReceiveLoginPackets() noexcept
 	const auto username = UO::ExtractString(packets.login.credentials.username);
 	const auto password = UO::ExtractString(packets.login.credentials.password);
 	if (!IsValidUsername(username)) {
+		++instance.metrics.malformed_logins;
 		accounting.UpdateTokenBucket(8);
 		Destroy();
 		return;
@@ -189,6 +199,7 @@ Connection::ReceiveLoginPackets() noexcept
 		if (!instance.GetDatabase().CheckCredentials(username, password)) {
 			fmt::print(stderr, "Bad password for user {:?} from {}\n",
 				   username, remote_address);
+			++instance.metrics.rejected_logins;
 
 			accounting.UpdateTokenBucket(5);
 			Destroy();
@@ -204,6 +215,7 @@ Connection::ReceiveLoginPackets() noexcept
 	accounting.UpdateTokenBucket(1);
 	fmt::print(stderr, "Accepted password for user {:?} from {}\n",
 		   username, remote_address);
+	++instance.metrics.accepted_logins;
 
 	if (!instance.GetConfig().server_list.empty()) {
 		SendServerList();
@@ -249,8 +261,11 @@ Connection::OnIncomingReady(unsigned events) noexcept
 	}
 
 	if (events & incoming.READ) {
+		splice_in_out.received_bytes = 0;
 		switch (splice_in_out.ReceiveFrom(instance.GetPipeStock(), incoming.GetSocket())) {
 		case Splice::ReceiveResult::OK:
+			instance.metrics.client_bytes += splice_in_out.received_bytes;
+
 			if (!DoSpliceSend(incoming, outgoing, splice_in_out)) {
 				Destroy();
 				return;
@@ -362,8 +377,11 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 	}
 
 	if (events & outgoing.READ) {
+		splice_out_in.received_bytes = 0;
 		switch (splice_out_in.ReceiveFrom(instance.GetPipeStock(), outgoing.GetSocket())) {
 		case Splice::ReceiveResult::OK:
+			instance.metrics.server_bytes += splice_out_in.received_bytes;
+
 			if (!DoSpliceSend(outgoing, incoming, splice_out_in)) {
 				Destroy();
 				return;
@@ -446,6 +464,9 @@ Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
 		return;
 	}
 
+	++instance.metrics.server_connections;
+	++instance.metrics.server_connections_established;
+
 	outgoing.Open(fd.Release());
 	outgoing.ScheduleRead();
 
@@ -461,6 +482,8 @@ void
 Connection::OnSocketConnectError(std::exception_ptr e) noexcept
 {
 	assert(state == State::CONNECTING);
+
+	++instance.metrics.server_connections_failed;
 
 	fmt::print(stderr, "Failed to connect to {}: {}\n",
 		   outgoing_address, std::move(e));

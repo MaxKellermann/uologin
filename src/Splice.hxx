@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 class PipeStock;
 class StockItem;
@@ -15,6 +16,8 @@ class Splice final {
 	std::size_t size = 0;
 
 public:
+	uint_least64_t received_bytes = 0, sent_bytes = 0;
+
 	Splice() noexcept = default;
 	~Splice() noexcept;
 

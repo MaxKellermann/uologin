@@ -1,6 +1,6 @@
 uosagas-login-server (0.3) unstable; urgency=low
 
-  * 
+  * add Prometheus exporter
 
  --   
 

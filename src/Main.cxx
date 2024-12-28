@@ -23,6 +23,9 @@ Run(const Config &config)
 {
 	Instance instance{config};
 
+	if (!config.prometheus_exporter.bind_address.IsNull())
+		instance.AddPrometheusExporter(config.prometheus_exporter.Create(SOCK_STREAM));
+
 	instance.AddListener(config.listener.Create(SOCK_STREAM));
 
 	if (!config.knock_listener.bind_address.IsNull())

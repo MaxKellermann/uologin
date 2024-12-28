@@ -6,8 +6,24 @@
 #include "io/config/FileLineParser.hxx"
 #include "net/AddressInfo.hxx"
 #include "net/IPv4Address.hxx"
+#include "net/Parser.hxx"
 #include "net/Resolver.hxx"
 #include "util/StringAPI.hxx"
+
+#include <fmt/core.h>
+
+#include <stdlib.h> // for getenv()
+
+using std::string_view_literals::operator""sv;
+
+inline
+Config::Config() noexcept
+{
+	if (const char *runtime_directory = getenv("RUNTIME_DIRECTORY")) {
+		prometheus_exporter.bind_address.SetLocal(fmt::format("{}/prometheus-exporter.socket"sv,
+								      runtime_directory));
+	}
+}
 
 class MyConfigParser final : public ConfigParser {
 	Config &config;
@@ -62,6 +78,16 @@ MyConfigParser::ParseLine(FileLineParser &line)
 	} else if (StringIsEqual(word, "send_remote_ip")) {
 		config.send_remote_ip = line.NextBool();
 		line.ExpectEnd();
+	} else if (StringIsEqual(word, "prometheus_exporter")) {
+		const char *value = line.ExpectValueAndEnd();
+
+		static constexpr struct addrinfo hints = {
+			.ai_flags = AI_ADDRCONFIG|AI_PASSIVE,
+			.ai_family = AF_UNSPEC,
+			.ai_socktype = SOCK_STREAM,
+		};
+
+		config.prometheus_exporter.bind_address = ParseSocketAddress(value, 5476, hints);
 	} else
 		throw LineParser::Error{"Unknown option"};
 }
