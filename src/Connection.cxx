@@ -8,6 +8,7 @@
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
+#include "lib/fmt/ExceptionFormatter.hxx"
 #include "lib/fmt/SocketAddressFormatter.hxx"
 #include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
@@ -318,7 +319,9 @@ Connection::OnSocketConnectError(std::exception_ptr e) noexcept
 {
 	assert(state == State::CONNECTING);
 
-	(void)e; // TODO
+	fmt::print(stderr, "Failed to connect to {}: {}\n",
+		   instance.GetConfig().game_server, std::move(e));
+
 	Destroy();
 }
 

@@ -2,6 +2,7 @@ uosagas-login-server (0.2) unstable; urgency=low
 
   * add option "auto_reload_user_database"
   * log accepted passwords to systemd journal
+  * log connect errors
 
  --   
 
