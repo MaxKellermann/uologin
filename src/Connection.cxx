@@ -7,6 +7,7 @@
 #include "uo/Command.hxx"
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
+#include "lib/fmt/SocketAddressFormatter.hxx"
 #include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
 #include "io/Iovec.hxx"
@@ -126,6 +127,9 @@ Connection::OnIncomingReady(unsigned events) noexcept
 
 		try {
 			if (!instance.GetDatabase().CheckCredentials(username, password)) {
+				fmt::print(stderr, "Bad password for user {:?} from {}\n",
+					   username, remote_address);
+
 				accounting.UpdateTokenBucket(5);
 				Destroy();
 				return;
@@ -138,7 +142,8 @@ Connection::OnIncomingReady(unsigned events) noexcept
 		}
 
 		accounting.UpdateTokenBucket(1);
-		fmt::print(stderr, "username={:?}\n", username);
+		fmt::print(stderr, "Accepted password for user {:?} from {}\n",
+			   username, remote_address);
 
 		// TODO verify credentials
 

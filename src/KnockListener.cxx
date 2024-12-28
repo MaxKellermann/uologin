@@ -9,6 +9,7 @@
 #include "uo/Packets.hxx"
 #include "uo/String.hxx"
 #include "lib/fmt/ExceptionFormatter.hxx"
+#include "lib/fmt/SocketAddressFormatter.hxx"
 #include "net/MultiReceiveMessage.hxx"
 #include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
@@ -54,6 +55,9 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 			accounting->UpdateTokenBucket(5);
 		return true;
 	}
+
+	fmt::print(stderr, "Accepted knock for user {:?} from {}\n",
+		   username, address);
 
 	accounting->SetKnocked();
 
