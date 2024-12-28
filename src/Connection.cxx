@@ -14,6 +14,7 @@
 #include "net/UniqueSocketDescriptor.hxx"
 #include "io/Iovec.hxx"
 #include "util/PrintException.hxx"
+#include "util/ScopeExit.hxx"
 #include "util/SpanCast.hxx"
 
 #include <fmt/core.h>
@@ -73,6 +74,73 @@ DoSpliceSend(SocketEvent &from, SocketEvent &to, Splice &s)
 	}
 
 	return true;
+}
+
+inline void
+Connection::SendServerList() noexcept
+{
+	assert(initial_packets_fill == initial_packets.size());
+
+	const auto &server_list = instance.GetConfig().server_list;
+	assert(!server_list.empty());
+
+	const std::size_t size = sizeof(struct uo_packet_server_list) +
+		(server_list.size() - 1) * sizeof(struct uo_fragment_server_info);
+	auto &packet = *reinterpret_cast<struct uo_packet_server_list *>(malloc(size));
+	AtScopeExit(&packet) { free(&packet); };
+
+	memset(&packet, 0, size);
+
+	packet.cmd = UO::Command::ServerList;
+	packet.length = size;
+	packet.unknown_0x5d = 0x5d;
+	packet.num_game_servers = server_list.size();
+
+	for (unsigned i = 0; i < server_list.size(); ++i) {
+		const auto &src = server_list[i];
+		auto &dst = packet.game_servers[i];
+
+		dst.index = i;
+		snprintf(dst.name, sizeof(dst.name), "%s", src.name.c_str());
+		dst.address = 0xdeadbeef;
+	}
+
+	if (incoming.GetSocket().Send(std::span{reinterpret_cast<std::byte *>(&packet), size}, MSG_DONTWAIT) < 0) {
+		Destroy();
+		return;
+	}
+
+	state = State::SERVER_LIST;
+	incoming.ScheduleRead();
+	timeout.Schedule(std::chrono::minutes{1});
+}
+
+inline void
+Connection::ReceivePlayServer() noexcept
+{
+	assert(state == State::SERVER_LIST);
+	assert(!instance.GetConfig().server_list.empty());
+	assert(initial_packets_fill == initial_packets.size());
+
+	struct uo_packet_play_server packet;
+
+	const auto nbytes = incoming.GetSocket().ReadNoWait(ReferenceAsWritableBytes(packet));
+	if (nbytes <= 0 || static_cast<std::size_t>(nbytes) != sizeof(packet) ||
+	    packet.cmd != UO::Command::PlayServer ||
+	    packet.index >= instance.GetConfig().server_list.size()) [[unlikely]] {
+		Destroy();
+		return;
+	}
+
+	outgoing_address = instance.GetConfig().server_list[packet.index].address;
+
+	incoming.CancelRead();
+	timeout.Cancel();
+
+	/* connect to the actual game server */
+	state = State::CONNECTING;
+	send_play_server = true;
+	connect.Connect(outgoing_address, std::chrono::seconds{10});
 }
 
 inline void
@@ -137,9 +205,15 @@ Connection::ReceiveLoginPackets() noexcept
 	fmt::print(stderr, "Accepted password for user {:?} from {}\n",
 		   username, remote_address);
 
+	if (!instance.GetConfig().server_list.empty()) {
+		SendServerList();
+		return;
+	}
+
 	/* connect to the actual game server */
 	state = State::CONNECTING;
-	connect.Connect(instance.GetConfig().game_server, std::chrono::seconds{10});
+	outgoing_address = instance.GetConfig().game_server;
+	connect.Connect(outgoing_address, std::chrono::seconds{10});
 }
 
 void
@@ -160,6 +234,10 @@ Connection::OnIncomingReady(unsigned events) noexcept
 		   from the socket */
 		assert(events & incoming.READ);
 		ReceiveLoginPackets();
+		return;
+	} else if (state == State::SERVER_LIST) {
+		assert(events & incoming.READ);
+		ReceivePlayServer();
 		return;
 	}
 
@@ -203,10 +281,63 @@ Connection::OnIncomingReady(unsigned events) noexcept
 	}
 }
 
+inline bool
+Discard(SocketDescriptor socket, std::size_t n) noexcept
+{
+	while (n > 0) {
+		std::byte buffer[1024];
+
+		auto nbytes = socket.ReadNoWait({buffer, std::min(sizeof(buffer), n)});
+		if (nbytes <= 0)
+			return false;
+
+		n -= nbytes;
+	}
+
+	return true;
+}
+
+inline void
+Connection::ReceiveServerList() noexcept
+{
+	UO::Command cmd;
+
+	if (outgoing.GetSocket().ReadNoWait(ReferenceAsWritableBytes(cmd)) != sizeof(cmd) ||
+		cmd != UO::Command::ServerList) {
+		Destroy();
+		return;
+	}
+
+	PackedBE16 length;
+
+	if (outgoing.GetSocket().ReadNoWait(ReferenceAsWritableBytes(length)) != sizeof(length) ||
+	    length < sizeof(struct uo_packet_server_list)) {
+		Destroy();
+		return;
+	}
+
+	if (!Discard(outgoing.GetSocket(), length - 3)) {
+		Destroy();
+		return;
+	}
+
+	static constexpr struct uo_packet_play_server play_server{
+		.cmd = UO::Command::PlayServer,
+		.index = 0,
+	};
+
+	if (outgoing.GetSocket().Send(ReferenceAsBytes(play_server), MSG_DONTWAIT) < 0) {
+		Destroy();
+		return;
+	}
+
+	incoming.ScheduleRead();
+	state = State::READY;
+}
+
 void
 Connection::OnOutgoingReady(unsigned events) noexcept
 {
-	assert(state == State::READY);
 	assert(incoming.IsDefined());
 	assert(!connect.IsPending());
 
@@ -215,6 +346,13 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 		Destroy();
 		return;
 	}
+
+	if (state == State::SEND_PLAY_SERVER) {
+		ReceiveServerList();
+		return;
+	}
+
+	assert(state == State::READY);
 
 	if (events & outgoing.WRITE) {
 		if (!DoSpliceSend(incoming, outgoing, splice_in_out)) {
@@ -310,8 +448,13 @@ Connection::OnSocketConnectSuccess(UniqueSocketDescriptor fd) noexcept
 
 	outgoing.Open(fd.Release());
 	outgoing.ScheduleRead();
-	incoming.ScheduleRead();
-	state = State::READY;
+
+	if (send_play_server) {
+		state = State::SEND_PLAY_SERVER;
+	} else {
+		incoming.ScheduleRead();
+		state = State::READY;
+	}
 }
 
 void
@@ -320,7 +463,7 @@ Connection::OnSocketConnectError(std::exception_ptr e) noexcept
 	assert(state == State::CONNECTING);
 
 	fmt::print(stderr, "Failed to connect to {}: {}\n",
-		   instance.GetConfig().game_server, std::move(e));
+		   outgoing_address, std::move(e));
 
 	Destroy();
 }

@@ -44,7 +44,7 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		config.auto_reload_user_database = line.NextBool();
 		line.ExpectEnd();
 	} else if (StringIsEqual(word, "game_server")) {
-		const char *value = line.ExpectValueAndEnd();
+		const char *value = line.ExpectValue();
 
 		static constexpr struct addrinfo hints = {
 			.ai_flags = AI_ADDRCONFIG,
@@ -53,6 +53,12 @@ MyConfigParser::ParseLine(FileLineParser &line)
 		};
 
 		config.game_server = Resolve(value, 2593, &hints).GetBest();
+
+		if (!line.IsEnd()) {
+			value = line.ExpectValueAndEnd();
+
+			config.server_list.emplace_back(value, std::move(config.game_server));
+		}
 	} else if (StringIsEqual(word, "send_remote_ip")) {
 		config.send_remote_ip = line.NextBool();
 		line.ExpectEnd();

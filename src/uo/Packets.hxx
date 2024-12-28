@@ -41,6 +41,36 @@ struct uo_packet_game_login {
 static_assert(alignof(struct uo_packet_game_login) == 1);
 static_assert(sizeof(struct uo_packet_game_login) == 65);
 
+/* for 0xa0 PlayServer */
+struct uo_packet_play_server {
+	UO::Command cmd;
+	PackedBE16 index;
+};
+
+static_assert(alignof(struct uo_packet_play_server) == 1);
+
+/* for 0xa8 ServerList */
+struct uo_fragment_server_info {
+	PackedBE16 index;
+	char name[32];
+	char full;
+	uint8_t timezone;
+	PackedBE32 address;
+};
+
+static_assert(alignof(struct uo_fragment_server_info) == 1);
+
+/* 0xa8 ServerList */
+struct uo_packet_server_list {
+	UO::Command cmd;
+	PackedBE16 length;
+	uint8_t unknown_0x5d;
+	PackedBE16 num_game_servers;
+	struct uo_fragment_server_info game_servers[1];
+};
+
+static_assert(alignof(struct uo_packet_server_list) == 1);
+
 /* 0xbf Extended */
 struct uo_packet_extended {
 	UO::Command cmd;

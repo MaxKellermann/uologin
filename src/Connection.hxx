@@ -31,6 +31,7 @@ class Connection final
 
 	Splice splice_in_out, splice_out_in;
 
+	SocketAddress outgoing_address;
 	ConnectSocket connect;
 
 	CoarseTimerEvent timeout;
@@ -40,9 +41,13 @@ class Connection final
 
 	enum class State : uint_least8_t {
 		INITIAL,
+		SERVER_LIST,
 		CONNECTING,
+		SEND_PLAY_SERVER,
 		READY,
 	} state = State::INITIAL;
+
+	bool send_play_server = false;
 
 public:
 	Connection(Instance &_instance,
@@ -59,7 +64,11 @@ private:
 		delete this;
 	}
 
+	void SendServerList() noexcept;
+	void ReceivePlayServer() noexcept;
 	void ReceiveLoginPackets() noexcept;
+
+	void ReceiveServerList() noexcept;
 
 	void OnIncomingReady(unsigned events) noexcept;
 	void OnOutgoingReady(unsigned events) noexcept;

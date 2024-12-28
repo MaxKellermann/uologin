@@ -3,9 +3,20 @@
 
 #pragma once
 
+#include "net/AllocatedSocketAddress.hxx"
 #include "net/SocketConfig.hxx"
 
 #include <string>
+#include <vector>
+
+struct GameServerConfig {
+	const std::string name;
+	AllocatedSocketAddress address;
+
+	[[nodiscard]]
+	GameServerConfig(const char *_name, SocketAddress _address) noexcept
+		:name(_name), address(_address) {}
+};
 
 struct Config {
 	SocketConfig listener{
@@ -22,6 +33,8 @@ struct Config {
 	std::string user_database;
 
 	AllocatedSocketAddress game_server;
+
+	std::vector<GameServerConfig> server_list;
 
 	bool auto_reload_user_database = false;
 
