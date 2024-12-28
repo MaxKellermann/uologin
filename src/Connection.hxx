@@ -59,6 +59,8 @@ private:
 		delete this;
 	}
 
+	void ReceiveLoginPackets() noexcept;
+
 	void OnIncomingReady(unsigned events) noexcept;
 	void OnOutgoingReady(unsigned events) noexcept;
 	void OnTimeout() noexcept;

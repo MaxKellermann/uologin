@@ -73,6 +73,71 @@ DoSpliceSend(SocketEvent &from, SocketEvent &to, Splice &s)
 	return true;
 }
 
+inline void
+Connection::ReceiveLoginPackets() noexcept
+{
+	/* read the initial packets (SEED and ACCOUNT_LOGIN) from the
+	   socket */
+
+	assert(initial_packets_fill < initial_packets.size());
+
+	const auto nbytes = incoming.GetSocket().ReadNoWait(std::span{initial_packets}.subspan(initial_packets_fill));
+	if (nbytes <= 0) [[unlikely]] {
+		// TODO log error?
+		Destroy();
+		return;
+	}
+
+	initial_packets_fill += nbytes;
+
+	if (initial_packets_fill < initial_packets.size())
+		return;
+
+	incoming.CancelRead();
+	timeout.Cancel();
+
+	const auto &packets = *reinterpret_cast<const ExpectedPackets *>(initial_packets.data());
+	static_assert(sizeof(initial_packets) == sizeof(packets));
+
+	if (packets.seed.cmd != UO::Command::Seed ||
+	    packets.login.cmd != UO::Command::AccountLogin) {
+		accounting.UpdateTokenBucket(10);
+		Destroy();
+		return;
+	}
+
+	const auto username = UO::ExtractString(packets.login.credentials.username);
+	const auto password = UO::ExtractString(packets.login.credentials.password);
+	if (!IsValidUsername(username)) {
+		accounting.UpdateTokenBucket(8);
+		Destroy();
+		return;
+	}
+
+	try {
+		if (!instance.GetDatabase().CheckCredentials(username, password)) {
+			fmt::print(stderr, "Bad password for user {:?} from {}\n",
+				   username, remote_address);
+
+			accounting.UpdateTokenBucket(5);
+			Destroy();
+			return;
+		}
+	} catch (...) {
+		PrintException(std::current_exception());
+		accounting.UpdateTokenBucket(2);
+		Destroy();
+		return;
+	}
+
+	accounting.UpdateTokenBucket(1);
+	fmt::print(stderr, "Accepted password for user {:?} from {}\n",
+		   username, remote_address);
+
+	/* connect to the actual game server */
+	connect.Connect(instance.GetServerAddress(), std::chrono::seconds{10});
+}
+
 void
 Connection::OnIncomingReady(unsigned events) noexcept
 {
@@ -90,65 +155,7 @@ Connection::OnIncomingReady(unsigned events) noexcept
 		/* read the initial packets (SEED and ACCOUNT_LOGIN)
 		   from the socket */
 		assert(events & incoming.READ);
-		assert(initial_packets_fill < initial_packets.size());
-
-		const auto nbytes = incoming.GetSocket().ReadNoWait(std::span{initial_packets}.subspan(initial_packets_fill));
-		if (nbytes <= 0) [[unlikely]] {
-			// TODO log error?
-			Destroy();
-			return;
-		}
-
-		initial_packets_fill += nbytes;
-
-		if (initial_packets_fill < initial_packets.size())
-			return;
-
-		incoming.CancelRead();
-		timeout.Cancel();
-
-		const auto &packets = *reinterpret_cast<const ExpectedPackets *>(initial_packets.data());
-		static_assert(sizeof(initial_packets) == sizeof(packets));
-
-		if (packets.seed.cmd != UO::Command::Seed ||
-		    packets.login.cmd != UO::Command::AccountLogin) {
-			accounting.UpdateTokenBucket(10);
-			Destroy();
-			return;
-		}
-
-		const auto username = UO::ExtractString(packets.login.credentials.username);
-		const auto password = UO::ExtractString(packets.login.credentials.password);
-		if (!IsValidUsername(username)) {
-			accounting.UpdateTokenBucket(8);
-			Destroy();
-			return;
-		}
-
-		try {
-			if (!instance.GetDatabase().CheckCredentials(username, password)) {
-				fmt::print(stderr, "Bad password for user {:?} from {}\n",
-					   username, remote_address);
-
-				accounting.UpdateTokenBucket(5);
-				Destroy();
-				return;
-			}
-		} catch (...) {
-			PrintException(std::current_exception());
-			accounting.UpdateTokenBucket(2);
-			Destroy();
-			return;
-		}
-
-		accounting.UpdateTokenBucket(1);
-		fmt::print(stderr, "Accepted password for user {:?} from {}\n",
-			   username, remote_address);
-
-		// TODO verify credentials
-
-		/* connect to the actual game server */
-		connect.Connect(instance.GetServerAddress(), std::chrono::seconds{10});
+		ReceiveLoginPackets();
 		return;
 	}
 
