@@ -21,12 +21,7 @@
 static int
 Run(const Config &config)
 {
-	Instance instance{
-		config.user_database.empty() ? nullptr : config.user_database.c_str(),
-		config.auto_reload_user_database,
-		config.game_server,
-		config.send_remote_ip,
-	};
+	Instance instance{config};
 
 	instance.AddListener(config.listener.Create(SOCK_STREAM));
 

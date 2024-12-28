@@ -17,10 +17,13 @@
 
 #include <forward_list>
 
+struct Config;
 class Listener;
 class KnockListener;
 
 class Instance {
+	const Config &config;
+
 	EventLoop event_loop;
 	ShutdownListener shutdown_listener{event_loop, BIND_THIS_METHOD(OnShutdown)};
 
@@ -37,15 +40,14 @@ class Instance {
 	std::forward_list<Listener> listeners;
 	std::forward_list<KnockListener> knock_listeners;
 
-	const SocketAddress server_address;
-
-	const bool send_remote_ip;
-
 public:
 	[[nodiscard]]
-	Instance(const char *user_database, bool auto_reload_user_database,
-		 SocketAddress _server_address, bool _send_remote_ip);
+	explicit Instance(const Config &_config);
 	~Instance() noexcept;
+
+	const Config &GetConfig() const noexcept {
+		return config;
+	}
 
 	EventLoop &GetEventLoop() noexcept {
 		return event_loop;
@@ -53,14 +55,6 @@ public:
 
 	PipeStock &GetPipeStock() noexcept {
 		return pipe_stock;
-	}
-
-	const SocketAddress GetServerAddress() const noexcept {
-		return server_address;
-	}
-
-	bool ShouldSendRemoteIP() const noexcept {
-		return send_remote_ip;
 	}
 
 	bool RequireKnock() const noexcept {

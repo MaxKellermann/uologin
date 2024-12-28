@@ -2,6 +2,7 @@
 // author: Max Kellermann <max.kellermann@gmail.com>
 
 #include "Connection.hxx"
+#include "Config.hxx"
 #include "Instance.hxx"
 #include "Validate.hxx"
 #include "uo/Command.hxx"
@@ -135,7 +136,7 @@ Connection::ReceiveLoginPackets() noexcept
 		   username, remote_address);
 
 	/* connect to the actual game server */
-	connect.Connect(instance.GetServerAddress(), std::chrono::seconds{10});
+	connect.Connect(instance.GetConfig().game_server, std::chrono::seconds{10});
 }
 
 void
@@ -273,7 +274,7 @@ Connection::SendInitialPackets(SocketDescriptor socket) noexcept
 
 	struct uo_packet_extended remote_ip_header;
 	std::string remote_ip_buffer;
-	if (instance.ShouldSendRemoteIP()) {
+	if (instance.GetConfig().send_remote_ip) {
 		if (const auto remote_ip = HostToString(remote_address); !remote_ip.empty()) {
 			remote_ip_buffer = fmt::format("REMOTE_IP={}", remote_ip);
 			remote_ip_header = {

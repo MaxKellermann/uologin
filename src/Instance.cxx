@@ -2,14 +2,14 @@
 // author: Max Kellermann <max.kellermann@gmail.com>
 
 #include "Instance.hxx"
+#include "Config.hxx"
 #include "Listener.hxx"
 #include "KnockListener.hxx"
 
-Instance::Instance(const char *user_database, bool auto_reload_user_database,
-		   SocketAddress _server_address, bool _send_remote_ip)
-	:database(user_database, auto_reload_user_database),
-	 server_address(_server_address),
-	 send_remote_ip(_send_remote_ip)
+Instance::Instance(const Config &_config)
+	:config(_config),
+	 database(config.user_database.empty() ? nullptr : config.user_database.c_str(),
+		  config.auto_reload_user_database)
 {
 	shutdown_listener.Enable();
 }
