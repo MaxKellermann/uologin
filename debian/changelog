@@ -5,7 +5,7 @@ uosagas-login-server (0.2) unstable; urgency=low
   * log connect errors
   * implement server list
 
- --   
+ -- Max Kellermann <max.kellermann@gmail.com>  Sat, 28 Dec 2024 09:52:30 +0100
 
 uosagas-login-server (0.1) unstable; urgency=low
 
