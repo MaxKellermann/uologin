@@ -439,7 +439,7 @@ Connection::SendInitialPackets(SocketDescriptor socket) noexcept
 			remote_ip_buffer = fmt::format("REMOTE_IP={}", remote_ip);
 			remote_ip_header = {
 				.cmd = UO::Command::Extended,
-				.length = remote_ip_buffer.length(),
+				.length = sizeof(remote_ip_header) + remote_ip_buffer.length(),
 				.extended_cmd = 0x5a6a,
 			};
 

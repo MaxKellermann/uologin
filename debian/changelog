@@ -1,6 +1,6 @@
 uosagas-login-server (0.4) unstable; urgency=low
 
-  * 
+  * fix malformed REMOTE_IP packet header
 
  --   
 
