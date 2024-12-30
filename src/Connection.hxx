@@ -64,6 +64,8 @@ private:
 		delete this;
 	}
 
+	bool SendAccountLoginReject() noexcept;
+
 	void SendServerList() noexcept;
 	void ReceivePlayServer() noexcept;
 	void ReceiveLoginPackets() noexcept;

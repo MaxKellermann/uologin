@@ -84,6 +84,17 @@ DoSpliceSend(SocketEvent &from, SocketEvent &to, Splice &s)
 	return true;
 }
 
+inline bool
+Connection::SendAccountLoginReject() noexcept
+{
+	static constexpr struct uo_packet_account_login_reject packet = {
+		.cmd = UO::Command::AccountLoginReject,
+		.reason = 0x03, // bad password
+	};
+
+	return incoming.GetSocket().Send(ReferenceAsBytes(packet), MSG_DONTWAIT) >= 0;
+}
+
 inline void
 Connection::SendServerList() noexcept
 {
@@ -191,6 +202,9 @@ Connection::ReceiveLoginPackets() noexcept
 	if (!IsValidUsername(username)) {
 		++instance.metrics.malformed_logins;
 		accounting.UpdateTokenBucket(8);
+
+		if (SendAccountLoginReject())
+			incoming.GetSocket().ShutdownWrite();
 		Destroy();
 		return;
 	}
@@ -202,12 +216,18 @@ Connection::ReceiveLoginPackets() noexcept
 			++instance.metrics.rejected_logins;
 
 			accounting.UpdateTokenBucket(5);
+
+			if (SendAccountLoginReject())
+				incoming.GetSocket().ShutdownWrite();
 			Destroy();
 			return;
 		}
 	} catch (...) {
 		PrintException(std::current_exception());
 		accounting.UpdateTokenBucket(2);
+
+		if (SendAccountLoginReject())
+			incoming.GetSocket().ShutdownWrite();
 		Destroy();
 		return;
 	}

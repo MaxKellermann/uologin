@@ -31,6 +31,14 @@ struct uo_packet_account_login {
 static_assert(alignof(struct uo_packet_account_login) == 1);
 static_assert(sizeof(struct uo_packet_account_login) == 62);
 
+/* 0x82 AccountLoginReject */
+struct uo_packet_account_login_reject {
+	UO::Command cmd;
+	uint8_t reason;
+};
+
+static_assert(alignof(struct uo_packet_account_login_reject) == 1);
+
 /* 0x91 GameLogin */
 struct uo_packet_game_login {
 	UO::Command cmd;
