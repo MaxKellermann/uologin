@@ -3,7 +3,7 @@ uologin (0.4) unstable; urgency=low
   * fix malformed REMOTE_IP packet header
   * send AccountLoginReject on password mismatch
 
- --   
+ -- Max Kellermann <max.kellermann@gmail.com>  Thu, 02 Jan 2025 17:23:26 +0100
 
 uologin (0.3) unstable; urgency=low
 
