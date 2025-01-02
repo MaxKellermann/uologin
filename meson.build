@@ -1,4 +1,4 @@
-project('uosagas-login-server', 'cpp', version: '0.4',
+project('uologin', 'cpp', version: '0.4',
   meson_version: '>= 1.0',
   default_options: [
     'cpp_std=c++2a',
@@ -129,7 +129,7 @@ conf.set('HAVE_LIBSYSTEMD', libsystemd.found())
 configure_file(output: 'config.h', configuration: conf)
 
 executable(
-  'uosagas-login-server',
+  'uologin',
   'src/Main.cxx',
   'src/CommandLine.cxx',
   'src/Config.cxx',
@@ -159,4 +159,4 @@ executable(
   install: true,
 )
 
-install_data('login.conf', install_dir: get_option('sysconfdir') / 'uosagas')
+install_data('uologin.conf', install_dir: get_option('sysconfdir'))

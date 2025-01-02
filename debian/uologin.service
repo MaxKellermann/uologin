@@ -1,13 +1,13 @@
 [Unit]
-Description=UOSagas Login Server
+Description=Ultima Online Login Server
 After=nftables.service
 
 [Service]
 Type=notify
 DynamicUser=yes
-ExecStart=/usr/bin/uosagas-login-server
+ExecStart=/usr/bin/uologin
 
-RuntimeDirectory=uosagas/login-server
+RuntimeDirectory=uologin
 
 WatchdogSec=2m
 

@@ -1,4 +1,4 @@
-Source: uosagas-login-server
+Source: uologin
 Section: games
 Priority: extra
 Maintainer: Max Kellermann <max.kellermann@gmail.com>
@@ -12,9 +12,11 @@ Build-Depends: debhelper (>= 13.3~),
  libsystemd-dev
 Standards-Version: 4.0.0
 
-Package: uosagas-login-server
+Package: uologin
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}, systemd-sysv
 Recommends: nftables
-Description: UOSagas login server
- A login server and game proxy for the UOSagas shard.
+Replaces: uosagas-login-server
+Conflicts: uosagas-login-server
+Description: Ultima Online Login Server
+ A login server and game proxy for Ultima Online.

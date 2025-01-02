@@ -6,7 +6,7 @@
 #include "net/SocketConfig.hxx"
 
 struct CommandLine {
-	const char *config_path = "/etc/uosagas/login.conf";
+	const char *config_path = "/etc/uologin.conf";
 };
 
 CommandLine

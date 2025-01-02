@@ -7,7 +7,7 @@ CommandLine
 ParseCommandLine(int argc, char **argv)
 {
 	if (argc > 2)
-		throw "Usage: uosagas-login-server [CONFIGFILE]";
+		throw "Usage: uologin [CONFIGFILE]";
 
 	CommandLine cmdline;
 

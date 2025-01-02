@@ -1,17 +1,17 @@
-uosagas-login-server (0.4) unstable; urgency=low
+uologin (0.4) unstable; urgency=low
 
   * fix malformed REMOTE_IP packet header
   * send AccountLoginReject on password mismatch
 
  --   
 
-uosagas-login-server (0.3) unstable; urgency=low
+uologin (0.3) unstable; urgency=low
 
   * add Prometheus exporter
 
  -- Max Kellermann <max.kellermann@gmail.com>  Sun, 29 Dec 2024 00:45:01 +0100
 
-uosagas-login-server (0.2) unstable; urgency=low
+uologin (0.2) unstable; urgency=low
 
   * add option "auto_reload_user_database"
   * log accepted passwords to systemd journal
@@ -20,7 +20,7 @@ uosagas-login-server (0.2) unstable; urgency=low
 
  -- Max Kellermann <max.kellermann@gmail.com>  Sat, 28 Dec 2024 09:52:30 +0100
 
-uosagas-login-server (0.1) unstable; urgency=low
+uologin (0.1) unstable; urgency=low
 
   * initial release
 
