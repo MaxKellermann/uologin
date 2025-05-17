@@ -48,6 +48,9 @@ Connection::Connection(Instance &_instance,
 
 Connection::~Connection() noexcept
 {
+	if (cancel_ptr)
+		cancel_ptr.Cancel();
+
 	if (outgoing.IsDefined()) {
 		outgoing.Close();
 		--instance.metrics.server_connections;
@@ -209,22 +212,36 @@ Connection::ReceiveLoginPackets() noexcept
 		return;
 	}
 
+	state = State::CHECK_CREDENTIALS;
+	incoming.CancelRead();
+
 	try {
-		if (!instance.GetDatabase().CheckCredentials(username, password)) {
-			fmt::print(stderr, "Bad password for user {:?} from {}\n",
-				   username, remote_address);
-			++instance.metrics.rejected_logins;
-
-			accounting.UpdateTokenBucket(5);
-
-			if (SendAccountLoginReject())
-				incoming.GetSocket().ShutdownWrite();
-			Destroy();
-			return;
-		}
+		instance.GetDatabase().CheckCredentials(username, password,
+							BIND_THIS_METHOD(OnCheckCredentials), cancel_ptr);
 	} catch (...) {
 		PrintException(std::current_exception());
 		accounting.UpdateTokenBucket(2);
+
+		if (SendAccountLoginReject())
+			incoming.GetSocket().ShutdownWrite();
+		Destroy();
+		return;
+	}
+}
+
+inline void
+Connection::OnCheckCredentials(std::string_view username, bool result) noexcept
+{
+	assert(state == State::CHECK_CREDENTIALS);
+
+	cancel_ptr = {};
+
+	if (!result) {
+		fmt::print(stderr, "Bad password for user {:?} from {}\n",
+			   username, remote_address);
+		++instance.metrics.rejected_logins;
+
+		accounting.UpdateTokenBucket(5);
 
 		if (SendAccountLoginReject())
 			incoming.GetSocket().ShutdownWrite();
@@ -244,6 +261,7 @@ Connection::ReceiveLoginPackets() noexcept
 
 	/* connect to the actual game server */
 	state = State::CONNECTING;
+	incoming.ScheduleRead();
 	outgoing_address = instance.GetConfig().game_server;
 	connect.Connect(outgoing_address, std::chrono::seconds{10});
 }

@@ -119,6 +119,7 @@ subdir('libcommon/src/net')
 subdir('libcommon/src/event')
 subdir('libcommon/src/event/net')
 subdir('libcommon/src/stock')
+subdir('libcommon/src/thread')
 
 if libsystemd.found()
   subdir('libcommon/src/event/systemd')
@@ -155,6 +156,7 @@ executable(
     net_dep,
     event_net_dep,
     stock_dep,
+    thread_pool_dep,
   ],
   install: true,
 )

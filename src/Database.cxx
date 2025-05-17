@@ -4,9 +4,13 @@
 #include "Database.hxx"
 #include "lib/fmt/RuntimeError.hxx"
 #include "lib/fmt/SystemError.hxx"
+#include "thread/Job.hxx"
+#include "thread/Queue.hxx"
+#include "thread/Pool.hxx"
 #include "io/CopyRegularFile.hxx"
 #include "io/Open.hxx"
 #include "io/UniqueFileDescriptor.hxx"
+#include "util/Cancellable.hxx"
 #include "util/CharUtil.hxx"
 #include "util/SpanCast.hxx"
 
@@ -22,8 +26,8 @@
 
 using std::string_view_literals::operator""sv;
 
-Database::Database(const char *_path, bool _auto_reload)
-	:path(_path), auto_reload(_auto_reload)
+Database::Database(ThreadQueue &_queue, const char *_path, bool _auto_reload)
+	:queue(_queue), path(_path), auto_reload(_auto_reload)
 {
 	if (path != nullptr && !auto_reload)
 		db = BerkeleyDB{path};
@@ -84,32 +88,77 @@ Database::MaybeAutoReload()
 	}
 }
 
-bool
+class Database::CheckCredentialsJob final : public ThreadJob, Cancellable {
+	ThreadQueue &queue;
+
+	const std::string username;
+
+	std::array<std::byte, 256> value_buffer;
+
+	const std::span<char> value;
+
+	const std::string_view password;
+
+	const CheckCredentialsCallback callback;
+
+	bool canceled = false;
+
+	bool result;
+
+public:
+	explicit CheckCredentialsJob(ThreadQueue &_queue, BerkeleyDB &db, std::string_view _username,
+				     std::string_view _password,
+				     CheckCredentialsCallback _callback,
+				     CancellablePointer &cancel_ptr)
+		:queue(_queue), username(_username),
+		 value(FromBytesStrict<char>(db.Get(AsBytes(username), {value_buffer.data(), value_buffer.size() - 1}))),
+		 password(_password), callback(_callback) {
+		value[value.size()] = '\0';
+		cancel_ptr = *this;
+	}
+
+	void Run() noexcept override {
+		result = crypto_pwhash_str_verify(value.data(), password.data(), password.size()) == 0;
+	}
+
+	void Done() noexcept override {
+		if (!canceled)
+			callback(username, result);
+		delete this;
+	}
+
+	void Cancel() noexcept override {
+		canceled = true;
+
+		if (queue.Cancel(*this))
+			delete this;
+	}
+};
+
+void
 Database::CheckCredentials(std::string_view username,
-			   std::string_view password)
+			   std::string_view password,
+			   CheckCredentialsCallback callback,
+			   CancellablePointer &cancel_ptr)
 {
 	if (auto_reload)
 		MaybeAutoReload();
 
-	if (!db)
-		return true;
+	if (!db) {
+		callback(username, true);
+		return;
+	}
 
 	std::array<char, 30> upper_username_buffer;
-	if (username.size() > upper_username_buffer.size())
-		return false;
+	if (username.size() > upper_username_buffer.size()) {
+		callback(username, false);
+		return;
+	}
 
 	std::transform(username.begin(), username.end(),
 		       upper_username_buffer.begin(), ToUpperASCII);
 	username = {upper_username_buffer.data(), username.size()};
 
-	std::array<std::byte, 256> value_buffer;
-
-	auto value = FromBytesStrict<char>(db.Get(AsBytes(username), {value_buffer.data(), value_buffer.size() - 1}));
-	if (value.data() == nullptr)
-		return false;
-
-	value[value.size()] = '\0';
-
-	return crypto_pwhash_str_verify(value.data(),
-					password.data(), password.size()) == 0;
+	auto *job = new CheckCredentialsJob(queue, db, username, password, callback, cancel_ptr);
+	queue.Add(*job);
 }

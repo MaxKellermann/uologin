@@ -36,11 +36,14 @@ class Connection final
 
 	CoarseTimerEvent timeout;
 
+	CancellablePointer cancel_ptr;
+
 	std::array<std::byte, 83> initial_packets;
 	uint_least8_t initial_packets_fill = 0;
 
 	enum class State : uint_least8_t {
 		INITIAL,
+		CHECK_CREDENTIALS,
 		SERVER_LIST,
 		CONNECTING,
 		SEND_PLAY_SERVER,
@@ -75,6 +78,8 @@ private:
 	void OnIncomingReady(unsigned events) noexcept;
 	void OnOutgoingReady(unsigned events) noexcept;
 	void OnTimeout() noexcept;
+
+	void OnCheckCredentials(std::string_view username, bool result) noexcept;
 
 	bool SendInitialPackets(SocketDescriptor socket) noexcept;
 
