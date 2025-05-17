@@ -5,6 +5,7 @@
 #include "Config.hxx"
 #include "Listener.hxx"
 #include "KnockListener.hxx"
+#include "thread/Pool.hxx"
 #include "event/net/PrometheusExporterListener.hxx"
 #include "util/PrintException.hxx"
 
@@ -12,7 +13,8 @@
 
 Instance::Instance(const Config &_config)
 	:config(_config),
-	 database(config.user_database.empty() ? nullptr : config.user_database.c_str(),
+	 database(event_loop,
+		  config.user_database.empty() ? nullptr : config.user_database.c_str(),
 		  config.auto_reload_user_database)
 {
 	shutdown_listener.Enable();
@@ -56,6 +58,8 @@ Instance::OnShutdown() noexcept
 {
 	shutdown_listener.Disable();
 
+	thread_pool_stop();
+
 #ifdef HAVE_LIBSYSTEMD
 	systemd_watchdog.Disable();
 #endif
@@ -65,6 +69,8 @@ Instance::OnShutdown() noexcept
 	prometheus_exporter.reset();
 
 	client_accounting.Shutdown();
+
+	thread_pool_join();
 }
 
 std::string

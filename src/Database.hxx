@@ -4,6 +4,7 @@
 #pragma once
 
 #include "BerkeleyDB.hxx"
+#include "util/BindMethod.hxx"
 
 #include <exception>
 #include <string_view>
@@ -11,7 +12,12 @@
 #include <sys/types.h>
 #include <time.h>
 
+class EventLoop;
+class CancellablePointer;
+
 class Database {
+	EventLoop &event_loop;
+
 	BerkeleyDB db;
 
 	const char *const path;
@@ -22,15 +28,20 @@ class Database {
 
 	const bool auto_reload;
 
+	class CheckCredentialsJob;
+
 public:
 	[[nodiscard]]
-	Database(const char *_path, bool _auto_reload);
+	Database(EventLoop &_event_loop, const char *_path, bool _auto_reload);
 
 	~Database() noexcept = default;
 
-	[[gnu::pure]]
-	bool CheckCredentials(std::string_view username,
-			      std::string_view password);
+	using CheckCredentialsCallback = BoundMethod<void(std::string_view username, bool result) noexcept>;
+
+	void CheckCredentials(std::string_view username,
+			      std::string_view password,
+			      CheckCredentialsCallback callback,
+			      CancellablePointer &cancel_ptr);
 
 private:
 	void MaybeAutoReload();

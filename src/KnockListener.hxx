@@ -15,6 +15,8 @@ class KnockListener final : UdpHandler {
 	MultiUdpListener udp_listener;
 	const char *const nft_set;
 
+	class Request;
+
 public:
 	[[nodiscard]]
 	KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket,

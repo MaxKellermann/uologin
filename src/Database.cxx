@@ -4,9 +4,13 @@
 #include "Database.hxx"
 #include "lib/fmt/RuntimeError.hxx"
 #include "lib/fmt/SystemError.hxx"
+#include "thread/Job.hxx"
+#include "thread/Queue.hxx"
+#include "thread/Pool.hxx"
 #include "io/CopyRegularFile.hxx"
 #include "io/Open.hxx"
 #include "io/UniqueFileDescriptor.hxx"
+#include "util/Cancellable.hxx"
 #include "util/CharUtil.hxx"
 #include "util/SpanCast.hxx"
 
@@ -22,8 +26,8 @@
 
 using std::string_view_literals::operator""sv;
 
-Database::Database(const char *_path, bool _auto_reload)
-	:path(_path), auto_reload(_auto_reload)
+Database::Database(EventLoop &_event_loop, const char *_path, bool _auto_reload)
+	:event_loop(_event_loop), path(_path), auto_reload(_auto_reload)
 {
 	if (path != nullptr && !auto_reload)
 		db = BerkeleyDB{path};
@@ -84,32 +88,96 @@ Database::MaybeAutoReload()
 	}
 }
 
-bool
-Database::CheckCredentials(std::string_view username,
-			   std::string_view password)
-{
-	if (auto_reload)
-		MaybeAutoReload();
+class Database::CheckCredentialsJob final : public ThreadJob, Cancellable {
+	ThreadQueue &queue;
 
-	if (!db)
-		return true;
-
-	std::array<char, 30> upper_username_buffer;
-	if (username.size() > upper_username_buffer.size())
-		return false;
-
-	std::transform(username.begin(), username.end(),
-		       upper_username_buffer.begin(), ToUpperASCII);
-	username = {upper_username_buffer.data(), username.size()};
+	const std::string username, password;
 
 	std::array<char, crypto_pwhash_STRBYTES> value;
 
-	const std::size_t value_size = db.Get(AsBytes(username), std::as_writable_bytes(std::span{value}));
+	const std::size_t value_size;
+
+	const CheckCredentialsCallback callback;
+
+	bool canceled = false;
+
+	bool result;
+
+public:
+	explicit CheckCredentialsJob(ThreadQueue &_queue, BerkeleyDB &db,
+				     std::string_view _username,
+				     std::string_view _password,
+				     CheckCredentialsCallback _callback,
+				     CancellablePointer &cancel_ptr)
+		:queue(_queue), username(_username), password(_password),
+		 value_size(db.Get(AsBytes(username), std::as_writable_bytes(std::span{value}))),
+		 callback(_callback) {
+		cancel_ptr = *this;
+	}
+
+private:
+	[[nodiscard]]
+	bool CheckPassword() noexcept;
+
+	// virtual methods from ThreadJob
+
+	void Run() noexcept override {
+		result = CheckPassword();
+	}
+
+	void Done() noexcept override {
+		if (!canceled)
+			callback(username, result);
+		delete this;
+	}
+
+	void Cancel() noexcept override {
+		canceled = true;
+
+		if (queue.Cancel(*this))
+			delete this;
+	}
+};
+
+inline bool
+Database::CheckCredentialsJob::CheckPassword() noexcept
+{
 	if (value_size == 0 || value_size >= value.size())
 		return false;
 
 	value[value_size] = '\0';
 
-	return crypto_pwhash_str_verify(value.data(),
-					password.data(), password.size()) == 0;
+	return crypto_pwhash_str_verify(value.data(), password.data(), password.size()) == 0;
+}
+
+void
+Database::CheckCredentials(std::string_view username,
+			   std::string_view password,
+			   CheckCredentialsCallback callback,
+			   CancellablePointer &cancel_ptr)
+{
+	if (auto_reload)
+		MaybeAutoReload();
+
+	if (!db) {
+		callback(username, true);
+		return;
+	}
+
+	std::array<char, 30> upper_username_buffer;
+	if (username.size() > upper_username_buffer.size()) {
+		callback(username, false);
+		return;
+	}
+
+	std::transform(username.begin(), username.end(),
+		       upper_username_buffer.begin(), ToUpperASCII);
+	username = {upper_username_buffer.data(), username.size()};
+
+	auto &queue = thread_pool_get_queue(event_loop);
+
+	auto *job = new CheckCredentialsJob(queue, db,
+					    username, password,
+					    callback, cancel_ptr);
+	queue.Add(*job);
 }

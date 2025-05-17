@@ -10,9 +10,11 @@
 #include "uo/String.hxx"
 #include "lib/fmt/ExceptionFormatter.hxx"
 #include "lib/fmt/SocketAddressFormatter.hxx"
+#include "net/AllocatedSocketAddress.hxx"
 #include "net/MultiReceiveMessage.hxx"
 #include "net/ToString.hxx"
 #include "net/UniqueSocketDescriptor.hxx"
+#include "util/Cancellable.hxx"
 #include "util/PrintException.hxx"
 
 KnockListener::KnockListener(Instance &_instance, UniqueSocketDescriptor &&socket,
@@ -24,6 +26,30 @@ KnockListener::KnockListener(Instance &_instance, UniqueSocketDescriptor &&socke
 	 nft_set(_nft_set)
 {
 }
+
+class KnockListener::Request final {
+	Instance &instance;
+	const char *const nft_set;
+
+	const AllocatedSocketAddress address;
+
+	/* this field is never used because UDP requests cannot be
+	   canceled */
+	CancellablePointer cancel_ptr;
+
+public:
+	Request(Instance &_instance, const char *_nft_set,
+		std::string_view username, std::string_view password,
+		SocketAddress _address) noexcept
+		:instance(_instance), nft_set(_nft_set),
+		 address(_address) {
+		instance.GetDatabase().CheckCredentials(username, password,
+							BIND_THIS_METHOD(OnCheckCredentials), cancel_ptr);
+	}
+
+private:
+	void OnCheckCredentials(std::string_view username, bool result) noexcept;
+};
 
 bool
 KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
@@ -52,11 +78,24 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 		return true;
 	}
 
-	if (!instance.GetDatabase().CheckCredentials(username, password)) {
+	new Request(instance, nft_set, username, password, address);
+
+	return true;
+}
+
+void
+KnockListener::Request::OnCheckCredentials(std::string_view username, bool result) noexcept
+{
+	auto *accounting = instance.GetClientAccounting(address);
+	if (accounting == nullptr)
+		return;
+
+	if (!result) {
 		if (accounting != nullptr)
 			accounting->UpdateTokenBucket(5);
 		++instance.metrics.rejected_knocks;
-		return true;
+		delete this;
+		return;
 	}
 
 	fmt::print(stderr, "Accepted knock for user {:?} from {}\n",
@@ -75,7 +114,7 @@ KnockListener::OnUdpDatagram(std::span<const std::byte> payload,
 		}
 	}
 
-	return true;
+	delete this;
 }
 
 void
