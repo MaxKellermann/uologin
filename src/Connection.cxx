@@ -67,12 +67,12 @@ DoSpliceSend(SocketEvent &from, SocketEvent &to, Splice &s)
 {
 	switch (s.SendTo(to.GetSocket())) {
 	case Splice::SendResult::OK:
-		to.CancelWrite();
+		to.CancelOnlyWrite();
 		break;
 
 	case Splice::SendResult::PARTIAL:
 	case Splice::SendResult::SOCKET_BLOCKING:
-		from.CancelRead();
+		from.CancelOnlyRead();
 		to.ScheduleWrite();
 		break;
 
@@ -153,7 +153,7 @@ Connection::ReceivePlayServer() noexcept
 
 	outgoing_address = instance.GetConfig().server_list[packet.index].address;
 
-	incoming.CancelRead();
+	incoming.CancelOnlyRead();
 	timeout.Cancel();
 
 	/* connect to the actual game server */
@@ -183,7 +183,7 @@ Connection::ReceiveLoginPackets() noexcept
 	if (initial_packets_fill < initial_packets.size())
 		return;
 
-	incoming.CancelRead();
+	incoming.CancelOnlyRead();
 	timeout.Cancel();
 
 	const auto &packets = *reinterpret_cast<const ExpectedPackets *>(initial_packets.data());
@@ -305,7 +305,7 @@ Connection::OnIncomingReady(unsigned events) noexcept
 
 		case Splice::ReceiveResult::PIPE_FULL:
 			assert(outgoing.IsWritePending());
-			incoming.CancelRead();
+			incoming.CancelOnlyRead();
 			return;
 
 		case Splice::ReceiveResult::ERROR:
@@ -421,7 +421,7 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 
 		case Splice::ReceiveResult::PIPE_FULL:
 			assert(incoming.IsWritePending());
-			outgoing.CancelRead();
+			outgoing.CancelOnlyRead();
 			return;
 
 		case Splice::ReceiveResult::ERROR:
