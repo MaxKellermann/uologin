@@ -24,7 +24,7 @@ DelayedConnection::DelayedConnection(Instance &_instance, Listener &_listener,
 
 	/* schedule just EPOLLRDHUP because it can reliably detect
 	   hangups without having to poll for EPOLLIN */
-	socket.Schedule(EPOLLRDHUP);
+	socket.Schedule(socket.READ_HANGUP);
 }
 
 DelayedConnection::~DelayedConnection() noexcept
