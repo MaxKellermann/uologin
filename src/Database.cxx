@@ -90,12 +90,9 @@ Database::MaybeAutoReload()
 
 class Database::CheckCredentialsJob final : public ThreadJob, Cancellable {
 	ThreadQueue &queue;
+	BerkeleyDB &db;
 
 	const std::string username, password;
-
-	std::array<char, crypto_pwhash_STRBYTES> value;
-
-	const std::size_t value_size;
 
 	const CheckCredentialsCallback callback;
 
@@ -104,13 +101,13 @@ class Database::CheckCredentialsJob final : public ThreadJob, Cancellable {
 	bool result;
 
 public:
-	explicit CheckCredentialsJob(ThreadQueue &_queue, BerkeleyDB &db,
+	explicit CheckCredentialsJob(ThreadQueue &_queue, BerkeleyDB &_db,
 				     std::string_view _username,
 				     std::string_view _password,
 				     CheckCredentialsCallback _callback,
 				     CancellablePointer &cancel_ptr)
-		:queue(_queue), username(_username), password(_password),
-		 value_size(db.Get(AsBytes(username), std::as_writable_bytes(std::span{value}))),
+		:queue(_queue), db(_db),
+		 username(_username), password(_password),
 		 callback(_callback) {
 		cancel_ptr = *this;
 	}
@@ -142,6 +139,17 @@ private:
 inline bool
 Database::CheckCredentialsJob::CheckPassword() noexcept
 {
+	std::array<char, 30> upper_username_buffer;
+	if (username.size() > upper_username_buffer.size())
+		return false;
+
+	std::transform(username.begin(), username.end(),
+		       upper_username_buffer.begin(), ToUpperASCII);
+	const std::string_view key = {upper_username_buffer.data(), username.size()};
+
+	std::array<char, crypto_pwhash_STRBYTES> value;
+	const std::size_t value_size = db.Get(AsBytes(key), std::as_writable_bytes(std::span{value}));
+
 	if (value_size == 0 || value_size >= value.size())
 		return false;
 
@@ -163,16 +171,6 @@ Database::CheckCredentials(std::string_view username,
 		callback(username, true);
 		return;
 	}
-
-	std::array<char, 30> upper_username_buffer;
-	if (username.size() > upper_username_buffer.size()) {
-		callback(username, false);
-		return;
-	}
-
-	std::transform(username.begin(), username.end(),
-		       upper_username_buffer.begin(), ToUpperASCII);
-	username = {upper_username_buffer.data(), username.size()};
 
 	auto &queue = thread_pool_get_queue(event_loop);
 

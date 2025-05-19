@@ -20,7 +20,7 @@ BerkeleyDB::Open(const char *path)
 {
 	assert(db != nullptr);
 
-	constexpr u_int32_t flags = DB_RDONLY;
+	constexpr u_int32_t flags = DB_RDONLY|DB_THREAD;
 
 	if (int ret = db->open(db, nullptr, path, nullptr, DB_HASH, flags, 0)) {
 		db->close(db, 0);
