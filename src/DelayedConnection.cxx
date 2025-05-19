@@ -13,7 +13,7 @@ DelayedConnection::DelayedConnection(Instance &_instance, Listener &_listener,
 				     Event::Duration delay,
 				     UniqueSocketDescriptor fd,
 				     SocketAddress _peer_address) noexcept
-	:instance(_instance), listener(_listener),
+	:listener(_listener),
 	 peer_address(_peer_address),
 	 timer(_instance.GetEventLoop(), BIND_THIS_METHOD(OnTimer)),
 	 socket(_instance.GetEventLoop(), BIND_THIS_METHOD(OnSocketReady), fd.Release())

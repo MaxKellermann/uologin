@@ -21,7 +21,6 @@ class UniqueSocketDescriptor;
 class DelayedConnection final
 	: public AutoUnlinkIntrusiveListHook
 {
-	Instance &instance;
 	Listener &listener;
 
 	const AllocatedSocketAddress peer_address;
