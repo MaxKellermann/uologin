@@ -3,7 +3,7 @@ Section: games
 Priority: extra
 Maintainer: Max Kellermann <max.kellermann@gmail.com>
 Build-Depends: debhelper (>= 13.3~),
- meson (>= 1.0),
+ meson (>= 1.2),
  g++ (>= 4:12),
  libc6-dev (>= 2.13),
  libdb-dev,

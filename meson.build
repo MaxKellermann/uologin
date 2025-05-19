@@ -1,5 +1,5 @@
 project('uologin', 'cpp', version: '0.5',
-  meson_version: '>= 1.0',
+  meson_version: '>= 1.2',
   default_options: [
     'cpp_std=c++2a',
     'warning_level=3',
