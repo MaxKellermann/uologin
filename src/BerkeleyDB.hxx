@@ -43,6 +43,11 @@ public:
 	void Create();
 	void Open(const char *path);
 
-	std::span<std::byte> Get(std::span<const std::byte> key,
-				 std::span<std::byte> value_buffer) const;
+	/**
+	 * @return the number of bytes written to #value_buffer; 0 for
+	 * "key not found"
+	 */
+	[[nodiscard]]
+	std::size_t Get(std::span<const std::byte> key,
+			std::span<std::byte> value_buffer) const;
 };

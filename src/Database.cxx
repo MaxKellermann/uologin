@@ -102,13 +102,13 @@ Database::CheckCredentials(std::string_view username,
 		       upper_username_buffer.begin(), ToUpperASCII);
 	username = {upper_username_buffer.data(), username.size()};
 
-	std::array<std::byte, crypto_pwhash_STRBYTES> value_buffer;
+	std::array<char, crypto_pwhash_STRBYTES> value;
 
-	auto value = FromBytesStrict<char>(db.Get(AsBytes(username), {value_buffer.data(), value_buffer.size() - 1}));
-	if (value.data() == nullptr)
+	const std::size_t value_size = db.Get(AsBytes(username), std::as_writable_bytes(std::span{value}));
+	if (value_size == 0 || value_size >= value.size())
 		return false;
 
-	value[value.size()] = '\0';
+	value[value_size] = '\0';
 
 	return crypto_pwhash_str_verify(value.data(),
 					password.data(), password.size()) == 0;

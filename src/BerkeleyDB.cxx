@@ -28,7 +28,7 @@ BerkeleyDB::Open(const char *path)
 	}
 }
 
-std::span<std::byte>
+std::size_t
 BerkeleyDB::Get(std::span<const std::byte> key,
 		std::span<std::byte> value_buffer) const
 {
@@ -52,5 +52,5 @@ BerkeleyDB::Get(std::span<const std::byte> key,
 		throw FmtRuntimeError("db_get() failed: {}", db_strerror(ret));
 	}
 
-	return value_buffer.first(db_value.size);
+	return db_value.size;
 }
