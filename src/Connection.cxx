@@ -251,7 +251,7 @@ Connection::ReceiveLoginPackets() noexcept
 void
 Connection::OnIncomingReady(unsigned events) noexcept
 {
-	if (events & (incoming.ERROR | incoming.HANGUP)) {
+	if (events & incoming.DEAD_MASK) {
 		if (state == State::INITIAL)
 			accounting.UpdateTokenBucket(4);
 
@@ -376,7 +376,7 @@ Connection::OnOutgoingReady(unsigned events) noexcept
 	assert(incoming.IsDefined());
 	assert(!connect.IsPending());
 
-	if (events & (outgoing.ERROR | outgoing.HANGUP)) {
+	if (events & outgoing.DEAD_MASK) {
 		accounting.UpdateTokenBucket(5);
 		Destroy();
 		return;
