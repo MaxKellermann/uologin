@@ -4,7 +4,7 @@ uologin (0.5) unstable; urgency=low
   * user_database: offload password check to a worker thread
   * allow cancellation while not reading from client
 
- --   
+ -- Max Kellermann <max.kellermann@gmail.com>  Mon, 19 May 2025 21:01:28 +0200
 
 uologin (0.4) unstable; urgency=low
 
