@@ -37,7 +37,9 @@ Connection::Connection(Instance &_instance,
 	++instance.metrics.client_connections;
 	++instance.metrics.client_connections_accepted;
 
-	incoming.ScheduleRead();
+	/* we need READ_HANGUP or else we won't get hangup events
+	   while READ is not scheduled */
+	incoming.Schedule(incoming.READ | incoming.READ_HANGUP);
 
 	/* wait for up to 5 seconds for login packets */
 	timeout.Schedule(std::chrono::seconds{5});

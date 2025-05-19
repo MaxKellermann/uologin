@@ -1,6 +1,7 @@
 uologin (0.5) unstable; urgency=low
 
   * user_database: fix assertion failure with GCC 15
+  * allow cancellation while not reading from client
 
  --   
 
