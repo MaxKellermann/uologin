@@ -35,7 +35,7 @@ DelayedConnection::~DelayedConnection() noexcept
 void
 DelayedConnection::OnTimer() noexcept
 {
-	UniqueSocketDescriptor fd{socket.ReleaseSocket()};
+	UniqueSocketDescriptor fd{AdoptTag{}, socket.ReleaseSocket()};
 
 	listener.AddConnection(accounting.GetPerClient(),
 			       std::move(fd), peer_address);
