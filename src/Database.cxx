@@ -102,7 +102,7 @@ Database::CheckCredentials(std::string_view username,
 		       upper_username_buffer.begin(), ToUpperASCII);
 	username = {upper_username_buffer.data(), username.size()};
 
-	std::array<std::byte, 256> value_buffer;
+	std::array<std::byte, crypto_pwhash_STRBYTES> value_buffer;
 
 	auto value = FromBytesStrict<char>(db.Get(AsBytes(username), {value_buffer.data(), value_buffer.size() - 1}));
 	if (value.data() == nullptr)
